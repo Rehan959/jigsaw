@@ -1,0 +1,23 @@
+{
+  "name": "@jigsaw/ingestion",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@jigsaw/shared": "workspace:*",
+    "@jigsaw/db": "workspace:*",
+    "openai": "^4.52.0",
+    "@pinecone-database/pinecone": "^2.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp.*
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Turbo
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Drizzle
+packages/db/migrations/*.sql
+
+# OpenCode
+.opencode/ralph-loop.local.md

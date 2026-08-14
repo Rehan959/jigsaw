@@ -1,0 +1,25 @@
+{
+  "name": "@jigsaw/crawler",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@jigsaw/shared": "workspace:*",
+    "@jigsaw/db": "workspace:*",
+    "playwright": "^1.45.0",
+    "bullmq": "^5.12.0",
+    "ioredis": "^5.4.0",
+    "drizzle-orm": "^0.33.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
