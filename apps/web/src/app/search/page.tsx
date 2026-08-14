@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-
+import { motion } from "framer-motion";
+import { Search, X, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 interface SearchResult {
   id: string;
   score: number;
@@ -70,87 +74,103 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen">
       {/* Search Header */}
-      <section className="relative py-16 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <section className="relative py-16 overflow-hidden border-b border-border">
+        <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border)/0.3)_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border)/0.3)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary-light text-sm font-medium mb-4">
-              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8"
+          >
+            <Badge variant="secondary" className="gap-2 mb-4">
+              <Search className="h-3.5 w-3.5" />
               Semantic Search
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="gradient-text">Search</span> Knowledge Base
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter mb-4">
+              <span className="text-primary">Search</span> Knowledge Base
             </h1>
-            <p className="text-text-secondary text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto font-light">
               Find relevant content across all your crawled sources using AI-powered semantic search
             </p>
-          </div>
+          </motion.div>
 
           {/* Search Form */}
-          <form onSubmit={handleSearch} className="relative">
-            <div className="glass-card rounded-2xl p-2 flex items-center gap-2 hover:border-primary/30 transition-all duration-300">
-              <div className="flex-1 flex items-center px-4">
-                <svg className="w-5 h-5 text-text-muted mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+          <motion.form
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            onSubmit={handleSearch}
+            className="relative max-w-2xl mx-auto"
+            role="search"
+          >
+            <div className="flex items-center gap-2 border border-border rounded-xl bg-card p-2 shadow-sm">
+              <div className="flex-1 flex items-center px-3">
+                <Search className="h-5 w-5 text-muted-foreground mr-3 shrink-0" />
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search for anything..."
-                  className="flex-1 bg-transparent text-lg text-text-primary placeholder-text-muted outline-none py-4"
+                  className="flex-1 bg-transparent text-lg text-foreground placeholder:text-muted-foreground outline-none py-3"
+                  aria-label="Search query"
                 />
                 {query && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() => { setQuery(""); setResults([]); setSearched(false); }}
-                    className="p-1.5 rounded-lg hover:bg-bg-elevated text-text-muted hover:text-text-primary transition-colors"
+                    className="h-8 w-8"
+                    aria-label="Clear search"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                    <X className="h-4 w-4" />
+                  </Button>
                 )}
               </div>
-              <button
+              <Button
                 type="submit"
                 disabled={loading || !query.trim()}
-                className="btn-primary !px-8 !py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8"
               >
                 {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
                     Searching...
-                  </span>
+                  </>
                 ) : (
                   "Search"
                 )}
-              </button>
+              </Button>
             </div>
-          </form>
+          </motion.form>
 
           {/* Suggested Queries */}
           {!searched && (
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              <span className="text-text-muted text-sm">Try:</span>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-6 flex flex-wrap items-center justify-center gap-2"
+            >
+              <span className="text-muted-foreground text-sm">Try:</span>
               {suggestedQueries.map((suggestion) => (
-                <button
+                <Button
                   key={suggestion}
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="px-3 py-1.5 rounded-lg bg-bg-elevated/50 hover:bg-bg-elevated text-text-secondary hover:text-text-primary text-sm transition-all duration-200 border border-transparent hover:border-border"
+                  className="text-sm"
                 >
                   {suggestion}
-                </button>
+                </Button>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       </section>
@@ -160,28 +180,33 @@ export default function SearchPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Loading State */}
           {loading && (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="relative">
-                <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-b-secondary rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
-              </div>
-              <p className="text-text-secondary mt-4">Searching your knowledge base...</p>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="h-5 w-3/4 bg-muted animate-pulse rounded mb-3" />
+                    <div className="h-4 w-1/2 bg-muted animate-pulse rounded mb-4" />
+                    <div className="h-4 w-full bg-muted animate-pulse rounded mb-2" />
+                    <div className="h-4 w-5/6 bg-muted animate-pulse rounded" />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
 
           {/* No Results */}
           {!loading && searched && results.length === 0 && (
-            <div className="text-center py-16 glass-card rounded-2xl">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-elevated flex items-center justify-center">
-                <svg className="w-8 h-8 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">No results found</h3>
-              <p className="text-text-secondary max-w-md mx-auto">
-                Try different keywords or make sure you have indexed sources. You can also try rephrasing your query.
-              </p>
-            </div>
+            <Card className="text-center py-16">
+              <CardContent>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <Search className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">No results found</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  Try different keywords or make sure you have indexed sources.
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {/* Results */}
@@ -190,69 +215,74 @@ export default function SearchPage() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <h2 className="text-lg font-semibold">
-                    <span className="text-primary-light">{results.length}</span> results found
+                    <span className="text-primary">{results.length}</span> results found
                   </h2>
                   {searchTime > 0 && (
-                    <span className="text-sm text-text-muted">
+                    <span className="text-sm text-muted-foreground">
                       in {(searchTime / 1000).toFixed(2)}s
                     </span>
                   )}
                 </div>
-                <span className="text-sm text-text-muted">
+                <span className="text-sm text-muted-foreground">
                   for &ldquo;{query}&rdquo;
                 </span>
               </div>
 
               <div className="space-y-4">
                 {results.map((result, index) => (
-                  <div
+                  <motion.div
                     key={result.id}
-                    className="glass-card rounded-xl p-6 hover:border-primary/40 transition-all duration-300 group"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <a
-                          href={result.metadata.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lg font-semibold text-text-primary hover:text-primary-light transition-colors line-clamp-1 group-hover:underline"
-                        >
-                          {result.metadata.title}
-                        </a>
-                        <a
-                          href={result.metadata.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-text-muted hover:text-primary-light transition-colors line-clamp-1 block mt-1"
-                        >
-                          {result.metadata.url}
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          result.score >= 0.8
-                            ? "bg-success/10 text-success"
-                            : result.score >= 0.6
-                            ? "bg-primary/10 text-primary-light"
-                            : "bg-warning/10 text-warning"
-                        }`}>
-                          {(result.score * 100).toFixed(1)}% match
+                    <Card className="group">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={result.metadata.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-lg font-semibold text-foreground hover:text-primary transition-colors duration-200 line-clamp-1 group-hover:underline"
+                            >
+                              {result.metadata.title}
+                            </a>
+                            <a
+                              href={result.metadata.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200 line-clamp-1 block mt-1"
+                            >
+                              {result.metadata.url}
+                            </a>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge
+                              variant={
+                                result.score >= 0.8
+                                  ? "success"
+                                  : result.score >= 0.6
+                                  ? "default"
+                                  : "warning"
+                              }
+                            >
+                              {(result.score * 100).toFixed(1)}% match
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-text-secondary text-sm leading-relaxed line-clamp-3">
-                      {result.content}
-                    </p>
-                    <div className="mt-4 flex items-center gap-4 text-sm text-text-muted">
-                      <span className="flex items-center gap-1.5">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        Chunk {result.metadata.chunkIndex + 1} of {result.metadata.totalChunks}
-                      </span>
-                    </div>
-                  </div>
+                        <p className="mt-4 text-muted-foreground text-sm leading-relaxed line-clamp-3">
+                          {result.content}
+                        </p>
+                        <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Package className="h-3.5 w-3.5" />
+                            Chunk {result.metadata.chunkIndex + 1} of {result.metadata.totalChunks}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -261,13 +291,11 @@ export default function SearchPage() {
           {/* Empty State */}
           {!loading && !searched && (
             <div className="text-center py-16">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <svg className="w-12 h-12 text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+              <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Search className="h-12 w-12 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Start searching</h3>
-              <p className="text-text-secondary max-w-md mx-auto">
+              <p className="text-muted-foreground max-w-md mx-auto">
                 Enter a query above to search through your knowledge base.
                 JigSaw uses AI to understand the meaning behind your search.
               </p>

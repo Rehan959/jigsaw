@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { ListChecks, Clock, CheckCircle, XCircle, Loader, Code } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface CrawlJob {
   id: string;
@@ -18,49 +23,24 @@ interface CrawlJob {
 
 const statusConfig = {
   queued: {
-    color: "text-warning",
-    bg: "bg-warning/10",
-    border: "border-warning/20",
+    variant: "warning" as const,
     label: "Queued",
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
+    icon: <Clock className="h-4 w-4" />,
   },
   running: {
-    color: "text-primary-light",
-    bg: "bg-primary/10",
-    border: "border-primary/20",
+    variant: "default" as const,
     label: "Running",
-    icon: (
-      <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-      </svg>
-    ),
+    icon: <Loader className="h-4 w-4 animate-spin" />,
   },
   completed: {
-    color: "text-success",
-    bg: "bg-success/10",
-    border: "border-success/20",
+    variant: "success" as const,
     label: "Completed",
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    ),
+    icon: <CheckCircle className="h-4 w-4" />,
   },
   failed: {
-    color: "text-error",
-    bg: "bg-error/10",
-    border: "border-error/20",
+    variant: "destructive" as const,
     label: "Failed",
-    icon: (
-      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    ),
+    icon: <XCircle className="h-4 w-4" />,
   },
 };
 
@@ -115,18 +95,22 @@ export default function JobsPage() {
       {/* Header */}
       <section className="py-12 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary-light text-sm font-medium mb-3">
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Job Monitor
-          </div>
-          <h1 className="text-3xl font-bold">
-            <span className="gradient-text">Crawl Jobs</span>
-          </h1>
-          <p className="text-text-secondary mt-2">
-            Monitor and manage your web crawling jobs
-          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Badge variant="secondary" className="gap-2 mb-3">
+              <ListChecks className="h-3.5 w-3.5" />
+              Job Monitor
+            </Badge>
+            <h1 className="text-3xl font-semibold tracking-tighter">
+              <span className="text-primary">Crawl Jobs</span>
+            </h1>
+            <p className="text-muted-foreground mt-2 font-light">
+              Monitor and manage your web crawling jobs
+            </p>
+          </motion.div>
         </div>
       </section>
 
@@ -134,26 +118,36 @@ export default function JobsPage() {
       <section className="py-6 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="glass-card rounded-xl p-4">
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <div className="text-sm text-text-muted">Total Jobs</div>
-            </div>
-            <div className="glass-card rounded-xl p-4">
-              <div className="text-2xl font-bold text-primary-light">{stats.running}</div>
-              <div className="text-sm text-text-muted">Running</div>
-            </div>
-            <div className="glass-card rounded-xl p-4">
-              <div className="text-2xl font-bold text-warning">{stats.queued}</div>
-              <div className="text-sm text-text-muted">Queued</div>
-            </div>
-            <div className="glass-card rounded-xl p-4">
-              <div className="text-2xl font-bold text-success">{stats.completed}</div>
-              <div className="text-sm text-text-muted">Completed</div>
-            </div>
-            <div className="glass-card rounded-xl p-4">
-              <div className="text-2xl font-bold text-error">{stats.failed}</div>
-              <div className="text-sm text-text-muted">Failed</div>
-            </div>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <div className="text-sm text-muted-foreground">Total Jobs</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-primary">{stats.running}</div>
+                <div className="text-sm text-muted-foreground">Running</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-amber-500">{stats.queued}</div>
+                <div className="text-sm text-muted-foreground">Queued</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-emerald-500">{stats.completed}</div>
+                <div className="text-sm text-muted-foreground">Completed</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-destructive">{stats.failed}</div>
+                <div className="text-sm text-muted-foreground">Failed</div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
@@ -161,7 +155,7 @@ export default function JobsPage() {
       {/* Filters */}
       <section className="py-4 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Filter jobs by status">
             {[
               { key: "all", label: "All", count: stats.total },
               { key: "running", label: "Running", count: stats.running },
@@ -169,24 +163,23 @@ export default function JobsPage() {
               { key: "completed", label: "Completed", count: stats.completed },
               { key: "failed", label: "Failed", count: stats.failed },
             ].map((f) => (
-              <button
+              <Button
                 key={f.key}
+                variant={filter === f.key ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setFilter(f.key)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  filter === f.key
-                    ? "bg-primary/20 text-primary-light"
-                    : "text-text-secondary hover:text-text-primary hover:bg-bg-elevated/50"
-                }`}
+                className="whitespace-nowrap"
+                role="tab"
+                aria-selected={filter === f.key}
               >
                 {f.label}
-                <span className={`text-xs px-1.5 py-0.5 rounded ${
-                  filter === f.key
-                    ? "bg-primary/30 text-primary-light"
-                    : "bg-bg-elevated text-text-muted"
-                }`}>
+                <Badge
+                  variant={filter === f.key ? "secondary" : "outline"}
+                  className="ml-2 h-5 px-1.5 text-xs"
+                >
                   {f.count}
-                </span>
-              </button>
+                </Badge>
+              </Button>
             ))}
           </div>
         </div>
@@ -196,82 +189,94 @@ export default function JobsPage() {
       <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-b-secondary rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
-              </div>
-              <p className="text-text-secondary mt-4">Loading jobs...</p>
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-muted animate-pulse shrink-0" />
+                      <div className="flex-1">
+                        <div className="h-4 w-24 bg-muted animate-pulse rounded mb-2" />
+                        <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-16 glass-card rounded-2xl">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <svg className="w-10 h-10 text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">No jobs found</h3>
-              <p className="text-text-secondary max-w-md mx-auto">
-                {filter === "all"
-                  ? "Start a crawl from the Sources page to see jobs here."
-                  : `No ${filter} jobs at the moment.`}
-              </p>
-            </div>
+            <Card className="text-center py-16">
+              <CardContent>
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <ListChecks className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">No jobs found</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  {filter === "all"
+                    ? "Start a crawl from the Sources page to see jobs here."
+                    : `No ${filter} jobs at the moment.`}
+                </p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
-              {filteredJobs.map((job) => {
+              {filteredJobs.map((job, index) => {
                 const config = statusConfig[job.status];
                 return (
-                  <div
+                  <motion.div
                     key={job.id}
-                    className="glass-card rounded-xl p-5 hover:border-primary/40 transition-all duration-300 group"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-lg ${config.bg} flex items-center justify-center ${config.color}`}>
-                          {config.icon}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color} ${config.border} border`}>
-                              {config.label}
-                            </span>
-                            {job.source && (
-                              <span className="text-sm text-text-secondary font-medium">
-                                {job.source.name || job.source.url}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-text-muted">
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                              </svg>
-                              {job.id.slice(0, 8)}...
-                            </span>
-                            <span>•</span>
-                            <span>{new Date(job.createdAt).toLocaleString()}</span>
-                            {job.completedAt && job.startedAt && (
-                              <>
-                                <span>•</span>
-                                <span className="text-success">
-                                  Duration: {formatDuration(job.startedAt, job.completedAt)}
+                    <Card>
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                              {config.icon}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={config.variant}>
+                                  {config.label}
+                                </Badge>
+                                {job.source && (
+                                  <span className="text-sm text-muted-foreground font-medium">
+                                    {job.source.name || job.source.url}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Code className="h-3 w-3" />
+                                  {job.id.slice(0, 8)}...
                                 </span>
-                              </>
-                            )}
+                                <span aria-hidden="true">&bull;</span>
+                                <span>{new Date(job.createdAt).toLocaleString()}</span>
+                                {job.completedAt && job.startedAt && (
+                                  <>
+                                    <span aria-hidden="true">&bull;</span>
+                                    <span className="text-emerald-500">
+                                      Duration: {formatDuration(job.startedAt, job.completedAt)}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
 
-                      {job.error && (
-                        <div className="text-right">
-                          <div className="text-error text-sm max-w-xs truncate" title={job.error}>
-                            {job.error}
-                          </div>
+                          {job.error && (
+                            <div className="text-right">
+                              <div className="text-destructive text-sm max-w-xs truncate" title={job.error}>
+                                {job.error}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 );
               })}
             </div>

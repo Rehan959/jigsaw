@@ -1,6 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Globe, Clock, Calendar, RefreshCw, Plus, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface Source {
   id: string;
@@ -105,29 +120,26 @@ export default function SourcesPage() {
       <section className="py-12 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary-light text-sm font-medium mb-3">
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Badge variant="secondary" className="gap-2 mb-3">
+                <Globe className="h-3.5 w-3.5" />
                 Sources
-              </div>
-              <h1 className="text-3xl font-bold">
-                <span className="gradient-text">Sources</span>
+              </Badge>
+              <h1 className="text-3xl font-semibold tracking-tighter">
+                <span className="text-primary">Sources</span>
               </h1>
-              <p className="text-text-secondary mt-2">
+              <p className="text-muted-foreground mt-2 font-light">
                 Manage your web sources and crawling schedule
               </p>
-            </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="btn-primary flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+            </motion.div>
+            <Button onClick={() => setShowAddModal(true)}>
+              <Plus className="h-4 w-4" />
               Add Source
-            </button>
+            </Button>
           </div>
         </div>
       </section>
@@ -137,22 +149,28 @@ export default function SourcesPage() {
         <section className="py-6 border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="glass-card rounded-xl p-4">
-                <div className="text-2xl font-bold">{sources.length}</div>
-                <div className="text-sm text-text-muted">Total Sources</div>
-              </div>
-              <div className="glass-card rounded-xl p-4">
-                <div className="text-2xl font-bold text-primary-light">
-                  {sources.filter((s) => s.lastCrawledAt).length}
-                </div>
-                <div className="text-sm text-text-muted">Crawled</div>
-              </div>
-              <div className="glass-card rounded-xl p-4">
-                <div className="text-2xl font-bold text-warning">
-                  {sources.filter((s) => !s.lastCrawledAt).length}
-                </div>
-                <div className="text-sm text-text-muted">Pending</div>
-              </div>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold">{sources.length}</div>
+                  <div className="text-sm text-muted-foreground">Total Sources</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-primary">
+                    {sources.filter((s) => s.lastCrawledAt).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Crawled</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-amber-500">
+                    {sources.filter((s) => !s.lastCrawledAt).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Pending</div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
@@ -162,194 +180,186 @@ export default function SourcesPage() {
       <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-b-secondary rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
-              </div>
-              <p className="text-text-secondary mt-4">Loading sources...</p>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-muted animate-pulse shrink-0" />
+                      <div className="flex-1">
+                        <div className="h-5 w-1/3 bg-muted animate-pulse rounded mb-2" />
+                        <div className="h-4 w-1/2 bg-muted animate-pulse rounded mb-4" />
+                        <div className="h-4 w-1/4 bg-muted animate-pulse rounded" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : sources.length === 0 ? (
-            <div className="text-center py-16 glass-card rounded-2xl">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <svg className="w-10 h-10 text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s1.343-9 3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">No sources yet</h3>
-              <p className="text-text-secondary mb-6 max-w-md mx-auto">
-                Add your first website source to start building your knowledge base.
-                JigSaw will crawl and index the content automatically.
-              </p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="btn-primary"
-              >
-                Add Your First Source
-              </button>
-            </div>
+            <Card className="text-center py-16">
+              <CardContent>
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Globe className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">No sources yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  Add your first website source to start building your knowledge base.
+                </p>
+                <Button onClick={() => setShowAddModal(true)}>
+                  Add Your First Source
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-4">
-              {sources.map((source) => (
-                <div
+              {sources.map((source, index) => (
+                <motion.div
                   key={source.id}
-                  className="glass-card rounded-xl p-6 hover:border-primary/40 transition-all duration-300 group"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                          <svg className="w-6 h-6 text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s1.343-9 3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                          </svg>
+                  <Card className="group">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-200">
+                              <Globe className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors duration-200">
+                                {source.name || getDomainFromUrl(source.url)}
+                              </h3>
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200"
+                              >
+                                {source.url}
+                              </a>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5" />
+                              {source.crawlFrequency || "Manual"}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5" />
+                              {source.lastCrawledAt
+                                ? `Last crawled ${new Date(source.lastCrawledAt).toLocaleDateString()}`
+                                : "Never crawled"}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-lg group-hover:text-primary-light transition-colors">
-                            {source.name || getDomainFromUrl(source.url)}
-                          </h3>
-                          <a
-                            href={source.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-text-muted hover:text-primary-light transition-colors"
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCrawl(source.id)}
+                            disabled={crawling === source.id}
+                            className="gap-1.5"
                           >
-                            {source.url}
-                          </a>
+                            {crawling === source.id ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                Crawling...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="h-4 w-4" />
+                                Crawl Now
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(source.id)}
+                            className="gap-1.5"
+                            aria-label={`Delete ${source.name || getDomainFromUrl(source.url)}`}
+                          >
+                            <Trash className="h-4 w-4" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-text-muted">
-                        <span className="flex items-center gap-1.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          {source.crawlFrequency || "Manual"}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          {source.lastCrawledAt
-                            ? `Last crawled ${new Date(source.lastCrawledAt).toLocaleDateString()}`
-                            : "Never crawled"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => handleCrawl(source.id)}
-                        disabled={crawling === source.id}
-                        className="btn-success disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                      >
-                        {crawling === source.id ? (
-                          <>
-                            <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                            Crawling...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Crawl Now
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(source.id)}
-                        className="btn-danger"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* Add Source Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="glass-card-static rounded-2xl p-8 w-full max-w-md mx-4 animate-scale-in">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-bold">Add New Source</h2>
-                <p className="text-text-muted text-sm mt-1">Enter the URL of the website to crawl</p>
-              </div>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="p-2 hover:bg-bg-elevated rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      {/* Add Source Dialog */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Source</DialogTitle>
+            <DialogDescription>
+              Enter the URL of the website to crawl
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddSource} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="source-url">Website URL</Label>
+              <Input
+                id="source-url"
+                type="url"
+                value={newSource.url}
+                onChange={(e) => setNewSource({ ...newSource, url: e.target.value })}
+                placeholder="https://example.com"
+                required
+                autoFocus
+              />
             </div>
 
-            <form onSubmit={handleAddSource} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Website URL
-                </label>
-                <input
-                  type="url"
-                  value={newSource.url}
-                  onChange={(e) => setNewSource({ ...newSource, url: e.target.value })}
-                  placeholder="https://example.com"
-                  className="input-base"
-                  required
-                  autoFocus
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="source-name">
+                Name <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="source-name"
+                type="text"
+                value={newSource.name}
+                onChange={(e) => setNewSource({ ...newSource, name: e.target.value })}
+                placeholder="My Website"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Name <span className="text-text-muted">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={newSource.name}
-                  onChange={(e) => setNewSource({ ...newSource, name: e.target.value })}
-                  placeholder="My Website"
-                  className="input-base"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={adding || !newSource.url.trim()}
-                  className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {adding ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Adding...
-                    </span>
-                  ) : (
-                    "Add Source"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={adding || !newSource.url.trim()}
+              >
+                {adding ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Adding...
+                  </>
+                ) : (
+                  "Add Source"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

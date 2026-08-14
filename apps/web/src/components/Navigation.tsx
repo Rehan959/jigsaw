@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { Menu, X, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -13,130 +16,133 @@ const navItems = [
 
 export default function Navigation() {
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const [showNavbar, setShowNavbar] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    setShowNavbar(latest > 0.05);
+  });
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen]);
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "glass-card-static shadow-lg shadow-black/20"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center space-x-2.5 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow">
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+    <>
+      {/* Static nav for mobile */}
+      <nav className="fixed top-0 left-0 right-0 z-40 px-4 py-3 md:hidden" aria-label="Main navigation">
+        <div className="flex items-center justify-between h-14">
+          <Link href="/" className="flex items-center space-x-2" aria-label="JigSaw home">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Search className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold gradient-text">JigSaw</span>
+            <span className="text-lg font-semibold tracking-tight">JigSaw</span>
           </Link>
-
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? "text-primary-light"
-                      : "text-text-secondary hover:text-text-primary"
-                  }`}
-                >
-                  {isActive && (
-                    <span className="absolute inset-0 bg-primary/10 rounded-lg" />
-                  )}
-                  <span className="relative z-10">{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="hidden md:flex items-center space-x-3">
-            <button className="btn-ghost text-sm">Sign In</button>
-            <button className="btn-primary text-sm !px-5 !py-2">
-              Get Started
-            </button>
-          </div>
-
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-bg-elevated/50 transition-colors"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {mobileOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
+          <Button asChild size="sm">
+            <Link href="/search">Get Started</Link>
+          </Button>
         </div>
+      </nav>
+
+      {/* Floating nav (appears on scroll on desktop) */}
+      <motion.nav
+        initial={{ opacity: 0, y: -20 }}
+        animate={showNavbar ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
+        transition={{ duration: 0.2 }}
+        className="fixed top-4 z-50 hidden md:flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-xl border border-border rounded-2xl w-[90%] lg:w-[80%] mx-auto left-1/2 -translate-x-1/2"
+        aria-label="Main navigation"
+      >
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center space-x-2" aria-label="JigSaw home">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+              <Search className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-semibold tracking-tight">JigSaw</span>
+          </Link>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`transition-colors duration-200 hover:text-foreground ${
+                  isActive ? "text-foreground" : ""
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button asChild size="sm">
+            <Link href="/search">Get Started</Link>
+          </Button>
+        </div>
+      </motion.nav>
+
+      {/* Mobile menu button */}
+      <div className="fixed top-4 right-4 z-50 md:hidden">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isOpen}
+        >
+          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
       </div>
 
-      {mobileOpen && (
-        <div className="md:hidden glass-card-static border-t border-border animate-slide-down">
-          <div className="px-4 py-4 space-y-2">
+      {/* Mobile menu */}
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed top-20 left-4 right-4 z-50 bg-background/95 backdrop-blur-xl border border-border rounded-2xl p-6 md:hidden"
+          role="menu"
+        >
+          <div className="flex flex-col gap-2">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`block px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  onClick={() => setIsOpen(false)}
+                  className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 ${
                     isActive
-                      ? "bg-primary/10 text-primary-light"
-                      : "text-text-secondary hover:text-text-primary hover:bg-bg-elevated/50"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
+                  role="menuitem"
                 >
                   {item.label}
                 </Link>
               );
             })}
-            <div className="pt-2 space-y-2">
-              <button className="w-full btn-ghost text-sm">Sign In</button>
-              <button className="w-full btn-primary text-sm">Get Started</button>
+            <div className="pt-3 mt-1 border-t border-border">
+              <Button asChild className="w-full">
+                <Link href="/search" onClick={() => setIsOpen(false)}>
+                  Get Started
+                </Link>
+              </Button>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
-    </nav>
+    </>
   );
 }
