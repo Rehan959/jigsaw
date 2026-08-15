@@ -73,9 +73,8 @@ Copy `.env.example` to `.env` and fill in:
 
 ## Known Issues
 
-- `packages/crawler/` — No source files yet (stub package)
-- `packages/ingestion/src/pipeline.ts:18` — `upsertChunks()` casts metadata as embeddings (bug)
-- `packages/mcp-server` — `list_sources` tool is a stub (no DB integration)
+- `packages/crawler/` — Stub package, no implementation yet
+- `packages/mcp-server` — Forked from Playwright MCP, currently runs JigSaw tools only (Playwright browser tools available via @playwright/mcp dependency)
 
 ## Key Decisions
 

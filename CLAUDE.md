@@ -35,7 +35,7 @@ Key routing rules:
 
 ## Known bugs
 
-- `packages/ingestion/src/pipeline.ts:18` — `upsertChunks()` casts `chunk.metadata` as `unknown as number[]` (should be the embeddings array). Metadata is being passed as the `values` field to Pinecone, which expects float vectors.
+- `packages/ingestion/src/pipeline.ts:18` — `upsertChunks()` now correctly accepts `embeddings: number[][]` as a second parameter (fixed). Callers must pass embeddings separately.
 
 ## Architecture notes
 

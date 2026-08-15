@@ -11,11 +11,14 @@ function getIndex() {
   return pinecone.index(INDEX_NAME);
 }
 
-export async function upsertChunks(chunks: Chunk[]): Promise<void> {
+export async function upsertChunks(
+  chunks: Chunk[],
+  embeddings: number[][]
+): Promise<void> {
   const index = getIndex();
-  const vectors = chunks.map((chunk) => ({
+  const vectors = chunks.map((chunk, i) => ({
     id: chunk.id,
-    values: chunk.metadata as unknown as number[],
+    values: embeddings[i],
     metadata: {
       content: chunk.content,
       sourceId: chunk.metadata.sourceId,

@@ -1,21 +1,24 @@
 # @jigsaw/mcp-server
 
-Model Context Protocol server exposing the JigSaw knowledge base to AI assistants.
+JigSaw MCP server — knowledge base search for AI assistants. Forked from Playwright MCP.
 
 ## Purpose
 
-Lets AI assistants (Claude, ChatGPT, etc.) connect via MCP and search the knowledge base using structured tools.
+Lets AI assistants (Claude, ChatGPT, etc.) connect via MCP and search the knowledge base, manage sources, and monitor crawl jobs.
 
 ## Architecture
 
-- `tools/search.ts` — Zod schemas for search/list tool inputs
-- `tools/query.ts` — MCP server setup + tool implementations
-- `index.ts` — Entry point (stdio transport)
+- `src/index.ts` — MCP server entry point (stdio transport, McpServer)
+- `src/tools/jigsaw.ts` — JigSaw tool implementations + Zod schemas
 
 ## MCP Tools
 
-- `search_knowledge_base` — Semantic search across ingested content. Params: `query` (string), `limit` (number, optional, default 10), `sourceId` (string, optional)
-- `list_sources` — List available data sources. Params: `limit` (number, optional, default 10). **Stub** — logs message but does not query DB yet.
+| Tool | Description |
+|------|-------------|
+| `jigsaw_search` | Semantic search across ingested content |
+| `jigsaw_list_sources` | List all crawled sources (PostgreSQL) |
+| `jigsaw_add_source` | Add a URL to crawl + ingest |
+| `jigsaw_crawl_status` | Check crawl job status |
 
 ## Transport
 
@@ -23,9 +26,11 @@ Lets AI assistants (Claude, ChatGPT, etc.) connect via MCP and search the knowle
 
 ## Dependencies
 
-- `@jigsaw/shared` — Types
+- `@jigsaw/shared` — Types (SearchQuery, SearchResult)
 - `@jigsaw/ingestion` — Search pipeline (`searchKnowledgeBase`)
+- `@jigsaw/db` — Database access (Drizzle ORM, sources + crawlJobs tables)
 - `@modelcontextprotocol/sdk@^1.30.0` — MCP protocol
+- `drizzle-orm@^0.33.0` — DB queries (must match @jigsaw/db version)
 - `zod` — Input validation
 
 ## Running
@@ -46,7 +51,13 @@ Or configure in your MCP client:
 }
 ```
 
-## Common Tasks
+## Adding a new tool
 
-- Add a new tool: define Zod schema in `tools/search.ts`, implement handler in `tools/query.ts`, register in `server.setRequestHandler()`
-- Test locally: run `npx jigsaw-mcp` and connect via MCP inspector
+1. Add Zod schema to `src/tools/jigsaw.ts`
+2. Add `server.tool()` call in `registerJigsawTools()`
+3. Build: `bun run build`
+4. Test: run `npx jigsaw-mcp` and connect via MCP inspector
+
+## Fork notes
+
+Forked from `microsoft/playwright-mcp` (Apache 2.0). The Playwright MCP source code is preserved in the repo for reference. The current entry point uses a standalone McpServer (not Playwright's createConnection) to give full control over tool registration.
