@@ -46,3 +46,11 @@ Key routing rules:
 - `searchKnowledgeBase()` dynamically imports the embedder to avoid loading OpenAI at module init
 - Frontend pages use **inline `fetch()`** — the typed `ApiClient` in `src/lib/api.ts` exists but is not yet used by page components
 - BullMQ + Redis handles async crawl job scheduling (in `packages/crawler/`, not yet implemented)
+
+## Testing
+
+- Run: `bun run test` (all tests) or `bun run test:watch` (watch mode)
+- Test dir: `packages/shared/src/__tests__/`, `packages/mcp-server/src/__tests__/`, `packages/mcp-server/src/tools/__tests__/`
+- Framework: Vitest + @testing-library/react + @testing-library/jest-dom
+- Write tests when fixing bugs (regression tests) and when adding new functions
+- Never commit code that makes existing tests fail

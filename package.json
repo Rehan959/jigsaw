@@ -11,17 +11,24 @@
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",
     "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate"
+    "db:migrate": "turbo run db:migrate",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^26.2.0",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",
+    "@vitejs/plugin-react": "^6.0.5",
     "eslint": "9",
     "eslint-config-next": "14",
+    "jsdom": "^30.0.1",
     "opencode-ralph-loop": "^1.0.10",
     "turbo": "latest",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.10"
   },
   "devEngines": {
     "packageManager": {
