@@ -10,7 +10,9 @@ JigSaw is a monorepo (bun + Turborepo) for AI-powered web scraping and semantic 
 - `packages/shared/src/types.ts` — all shared types (Source, CrawlJob, Chunk, SearchQuery, SearchResult, ChunkMetadata)
 - `packages/db/src/schema/sources.ts` — Drizzle schema (sources + crawlJobs tables)
 - `packages/ingestion/src/pipeline.ts` — core search + upsert logic
-- `packages/mcp-server/src/tools/query.ts` — MCP server setup + tool implementations
+- `packages/mcp-server/src/tools/search.ts` — search_knowledge_base tool + Zod schemas
+- `packages/mcp-server/src/tools/sources.ts` — list_sources, add_source tools
+- `packages/mcp-server/src/tools/crawl.ts` — crawl_status tool
 - `apps/api/src/index.ts` — Express app with routes
 - `apps/web/src/app/` — Next.js App Router pages
 
@@ -39,8 +41,8 @@ Key routing rules:
 
 ## Architecture notes
 
+- MCP server is a **standalone package** at `packages/mcp-server/` (not a Playwright fork)
 - MCP server uses **stdio** transport (not HTTP) — runs as a subprocess
-- `list_sources` MCP tool is a **stub** — logs a message but doesn't query the DB yet
 - `searchKnowledgeBase()` dynamically imports the embedder to avoid loading OpenAI at module init
 - Frontend pages use **inline `fetch()`** — the typed `ApiClient` in `src/lib/api.ts` exists but is not yet used by page components
 - BullMQ + Redis handles async crawl job scheduling (in `packages/crawler/`, not yet implemented)

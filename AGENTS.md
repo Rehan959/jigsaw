@@ -74,7 +74,7 @@ Copy `.env.example` to `.env` and fill in:
 ## Known Issues
 
 - `packages/crawler/` — Stub package, no implementation yet
-- `packages/mcp-server` — Forked from Playwright MCP, currently runs JigSaw tools only (Playwright browser tools available via @playwright/mcp dependency)
+- `packages/mcp-server` — Standalone MCP server for AI assistant integration (search_knowledge_base, list_sources, add_source, crawl_status)
 
 ## Key Decisions
 

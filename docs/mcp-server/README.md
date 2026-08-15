@@ -4,10 +4,12 @@ Model Context Protocol server that lets AI assistants search the JigSaw knowledg
 
 ## What it does
 
-The MCP server exposes two tools to AI assistants like Claude, ChatGPT, and Cursor:
+The MCP server exposes four tools to AI assistants like Claude, ChatGPT, and Cursor:
 
 - **`search_knowledge_base`** — Semantic search across crawled web content. Returns relevant chunks with source URLs and similarity scores.
-- **`list_sources`** — List available data sources (stub — DB integration pending).
+- **`list_sources`** — List available data sources in the knowledge base.
+- **`add_source`** — Add a new URL source to be crawled and indexed.
+- **`crawl_status`** — Check the status of a crawl job.
 
 ## Quick start
 

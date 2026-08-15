@@ -95,19 +95,17 @@ Lists available data sources in the knowledge base.
   "content": [
     {
       "type": "text",
-      "text": "List sources tool called with limit: 10. Implementation pending DB integration."
+      "text": "[\n  {\n    \"id\": \"...\",\n    \"url\": \"https://example.com\",\n    \"title\": \"...\",\n    \"status\": \"completed\",\n    \"createdAt\": \"...\"\n  }\n]"
     }
   ]
 }
 ```
 
-> **Note:** This tool is currently a stub. Full implementation requires DB integration via `@jigsaw/db`.
-
 ## Transports
 
 ### StdioServerTransport
 
-The server uses `StdioServerTransport` from `@modelcontextprotocol/sdk/server/stdio.js`. Communication happens over stdin/stdout — no HTTP server needed.
+The server uses `StdioServerTransport` from `@modelcontextprotocol/server/stdio.js` (MCP SDK v2). Communication happens over stdin/stdout — no HTTP server needed.
 
 ```
 AI Assistant ←→ MCP Client ←→ stdio ←→ JigSaw MCP Server
@@ -163,7 +161,7 @@ interface ChunkMetadata {
 |---------|---------|
 | `@jigsaw/shared` | Shared types (`SearchQuery`, `SearchResult`, `ChunkMetadata`) |
 | `@jigsaw/ingestion` | Search pipeline (`searchKnowledgeBase()`) |
-| `@modelcontextprotocol/sdk` | MCP protocol implementation |
+| `@modelcontextprotocol/server` | MCP SDK v2 — server framework |
 | `zod` | Input validation schemas |
 
 ## Source Files
@@ -173,8 +171,9 @@ packages/mcp-server/
 ├── src/
 │   ├── index.ts          # Entry point — creates server, connects stdio transport
 │   └── tools/
-│       ├── search.ts     # Zod schemas for tool inputs
-│       └── query.ts      # MCP server setup + tool implementations
+│       ├── search.ts     # search_knowledge_base tool + Zod schemas
+│       ├── sources.ts    # list_sources, add_source tools
+│       └── crawl.ts      # crawl_status tool
 ├── package.json
 └── tsconfig.json
 ```

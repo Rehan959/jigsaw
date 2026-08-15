@@ -5,7 +5,7 @@ Extend the JigSaw MCP server with custom tools for AI assistants.
 ## Prerequisites
 
 - Familiarity with the existing tools in `packages/mcp-server/src/tools/`
-- Understanding of the MCP SDK tool interface
+- Understanding of the MCP SDK v2 (`@modelcontextprotocol/server`) tool interface
 
 ## Steps
 
@@ -30,14 +30,13 @@ Rules:
 
 ### 2. Implement the tool
 
-Add the tool to `packages/mcp-server/src/tools/query.ts`:
+Add the tool to the appropriate file in `packages/mcp-server/src/tools/`:
 
 ```typescript
-server.tool(
-  "my_new_tool",
-  "Human-readable description of what this tool does. The AI reads this to decide when to call it.",
-  MyNewToolSchema.shape,
-  async ({ param1, param2 }) => {
+server.registerTool("my_new_tool", {
+  description: "Human-readable description of what this tool does. The AI reads this to decide when to call it.",
+  inputSchema: MyNewToolSchema,
+}, async ({ param1, param2 }) => {
     try {
       // Your logic here
       const result = await doSomething(param1, param2);
@@ -76,10 +75,10 @@ Rules:
 
 ### 3. Import the schema
 
-In `query.ts`, import your new schema:
+In the tool file where you register it, import your new schema:
 
 ```typescript
-import { SearchToolSchema, ListSourcesToolSchema, MyNewToolSchema } from "./search.js";
+import { MyNewToolSchema } from "./search.js";
 ```
 
 ### 4. Build and test
