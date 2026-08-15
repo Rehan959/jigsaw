@@ -37,3 +37,4 @@ packages/db/migrations/*.sql
 
 # OpenCode
 .opencode/ralph-loop.local.md
+.gstack/
