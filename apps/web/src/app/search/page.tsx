@@ -97,10 +97,7 @@ export default function SearchPage() {
           </motion.div>
 
           {/* Search Form */}
-          <motion.form
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+          <form
             onSubmit={handleSearch}
             className="relative max-w-2xl mx-auto"
             role="search"
@@ -148,7 +145,7 @@ export default function SearchPage() {
                 )}
               </Button>
             </div>
-          </motion.form>
+          </form>
 
           {/* Suggested Queries */}
           {!searched && (
