@@ -33,6 +33,10 @@ Takes scraped content, splits it into chunks, generates vector embeddings via Op
 - `PINECONE_API_KEY` — For vector DB access
 - `PINECONE_INDEX` — Index name (default: `jigsaw`)
 
+## Known bugs
+
+- `pipeline.ts:18` — `upsertChunks()` has `values: chunk.metadata as unknown as number[]`. This casts metadata as the embedding vector. Should be `values: chunk.embedding`.
+
 ## Common Tasks
 
 - Ingest a document: `chunkText()` → `generateEmbeddings()` → `upsertChunks()`

@@ -65,8 +65,22 @@ Copy `.env.example` to `.env` and fill in:
 
 ## Architecture Notes
 
-1. **Crawler** fetches pages via Playwright, cleans HTML
+1. **Crawler** fetches pages via Playwright, cleans HTML *(stub — not yet implemented)*
 2. **Ingestion** chunks content, generates embeddings, stores in Pinecone
-3. **MCP Server** exposes search tools for AI assistants
+3. **MCP Server** exposes search tools for AI assistants (stdio transport)
 4. **API** provides REST endpoints for the web frontend
 5. **Web** is the user-facing search and management interface
+
+## Known Issues
+
+- `packages/crawler/` — No source files yet (stub package)
+- `packages/ingestion/src/pipeline.ts:18` — `upsertChunks()` casts metadata as embeddings (bug)
+- `packages/mcp-server` — `list_sources` tool is a stub (no DB integration)
+
+## Key Decisions
+
+- **MCP transport:** stdio (subprocess), not HTTP — simpler for local AI assistant integration
+- **Embedding model:** OpenAI `text-embedding-3-small` (1536 dimensions)
+- **Chunk size:** 1000 chars with 200 char overlap
+- **Frontend:** Dark-mode-first, glassmorphism accents, purple primary (#5519f7)
+- **DB:** Drizzle ORM with PostgreSQL (sources + crawlJobs tables)

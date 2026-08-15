@@ -14,14 +14,18 @@ Lets AI assistants (Claude, ChatGPT, etc.) connect via MCP and search the knowle
 
 ## MCP Tools
 
-- `search_knowledge_base` — Semantic search across ingested content
-- `list_sources` — List available data sources
+- `search_knowledge_base` — Semantic search across ingested content. Params: `query` (string), `limit` (number, optional, default 10), `sourceId` (string, optional)
+- `list_sources` — List available data sources. Params: `limit` (number, optional, default 10). **Stub** — logs message but does not query DB yet.
+
+## Transport
+
+**stdio** — runs as a subprocess, not HTTP. The MCP client spawns this process and communicates via stdin/stdout.
 
 ## Dependencies
 
 - `@jigsaw/shared` — Types
-- `@jigsaw/ingestion` — Search pipeline
-- `@modelcontextprotocol/sdk` — MCP protocol
+- `@jigsaw/ingestion` — Search pipeline (`searchKnowledgeBase`)
+- `@modelcontextprotocol/sdk@^1.30.0` — MCP protocol
 - `zod` — Input validation
 
 ## Running
@@ -44,5 +48,5 @@ Or configure in your MCP client:
 
 ## Common Tasks
 
-- Add a new tool: define schema in `tools/search.ts`, implement in `tools/query.ts`
+- Add a new tool: define Zod schema in `tools/search.ts`, implement handler in `tools/query.ts`, register in `server.setRequestHandler()`
 - Test locally: run `npx jigsaw-mcp` and connect via MCP inspector
