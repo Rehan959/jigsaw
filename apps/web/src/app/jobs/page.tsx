@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ListChecks, Clock, CheckCircle, XCircle, Loader, Code } from "lucide-react";
+import { ListChecks, Clock, CheckCircle, XCircle, Loader, Code, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,17 +47,24 @@ const statusConfig = {
 export default function JobsPage() {
   const [jobs, setJobs] = useState<CrawlJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [apiAvailable, setApiAvailable] = useState(true);
 
   const fetchJobs = async () => {
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/jobs`
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setJobs(data.jobs || []);
+      setError(null);
+      setApiAvailable(true);
     } catch (error) {
       console.error("Failed to fetch jobs:", error);
+      setError("Unable to connect to the backend. Make sure the API server is running on port 3001.");
+      setApiAvailable(false);
     } finally {
       setLoading(false);
     }
@@ -65,9 +72,11 @@ export default function JobsPage() {
 
   useEffect(() => {
     fetchJobs();
-    const interval = setInterval(fetchJobs, 5000);
+    const interval = setInterval(() => {
+      if (apiAvailable) fetchJobs();
+    }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [apiAvailable]);
 
   const filteredJobs = filter === "all"
     ? jobs
@@ -204,6 +213,22 @@ export default function JobsPage() {
                 </Card>
               ))}
             </div>
+          ) : error ? (
+            <Card className="text-center py-16">
+              <CardContent>
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                  <ListChecks className="h-10 w-10 text-destructive" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Connection Error</h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                  {error}
+                </p>
+                <Button onClick={() => { setLoading(true); fetchJobs(); }}>
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
           ) : filteredJobs.length === 0 ? (
             <Card className="text-center py-16">
               <CardContent>

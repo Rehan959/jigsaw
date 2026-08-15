@@ -29,6 +29,7 @@ interface Source {
 export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSource, setNewSource] = useState({ url: "", name: "" });
   const [adding, setAdding] = useState(false);
@@ -39,10 +40,13 @@ export default function SourcesPage() {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/sources`
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setSources(data.sources || []);
+      setError(null);
     } catch (error) {
       console.error("Failed to fetch sources:", error);
+      setError("Unable to connect to the backend. Make sure the API server is running on port 3001.");
     } finally {
       setLoading(false);
     }
@@ -196,6 +200,22 @@ export default function SourcesPage() {
                 </Card>
               ))}
             </div>
+          ) : error ? (
+            <Card className="text-center py-16">
+              <CardContent>
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                  <Globe className="h-10 w-10 text-destructive" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Connection Error</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  {error}
+                </p>
+                <Button onClick={() => { setLoading(true); fetchSources(); }}>
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
           ) : sources.length === 0 ? (
             <Card className="text-center py-16">
               <CardContent>
