@@ -1,9 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
-import { db, sources, crawlJobs } from "@jigsaw/db";
-import { searchKnowledgeBase } from "@jigsaw/ingestion";
-import type { SearchQuery } from "@jigsaw/shared";
 
 const SearchSchema = z.object({
   query: z.string().describe("The search query to find relevant content"),
@@ -39,11 +35,12 @@ const CrawlStatusSchema = z.object({
 export function registerJigsawTools(server: McpServer): void {
   server.tool(
     "jigsaw_search",
-    "Search the JigSaw knowledge base for relevant content using semantic search",
+    "Search the JigSaw knowledge base using AI-powered semantic search. Returns relevant content chunks with source attribution and relevance scores. Use this when users ask questions about crawled content.",
     SearchSchema.shape,
     async ({ query, sourceId, limit, threshold }) => {
       try {
-        const searchQuery: SearchQuery = {
+        const { searchKnowledgeBase } = await import("@jigsaw/ingestion");
+        const searchQuery: import("@jigsaw/shared").SearchQuery = {
           query,
           sourceId,
           limit,
@@ -78,10 +75,11 @@ export function registerJigsawTools(server: McpServer): void {
 
   server.tool(
     "jigsaw_list_sources",
-    "List all crawled sources in the knowledge base",
+    "List all websites and URLs that have been crawled and added to the knowledge base. Shows source name, URL, crawl frequency, and last crawled timestamp.",
     ListSourcesSchema.shape,
     async ({ limit }) => {
       try {
+        const { db, sources } = await import("@jigsaw/db");
         const rows = await db.select().from(sources).limit(limit);
         return {
           content: [
@@ -111,10 +109,11 @@ export function registerJigsawTools(server: McpServer): void {
 
   server.tool(
     "jigsaw_add_source",
-    "Add a URL to be crawled and ingested into the knowledge base",
+    "Add a new website URL to be crawled and ingested into the knowledge base. Creates a source record and queues a crawl job. Requires a valid URL and user ID.",
     AddSourceSchema.shape,
     async ({ url, name, userId }) => {
       try {
+        const { db, sources } = await import("@jigsaw/db");
         const [inserted] = await db
           .insert(sources)
           .values({
@@ -151,10 +150,12 @@ export function registerJigsawTools(server: McpServer): void {
 
   server.tool(
     "jigsaw_crawl_status",
-    "Check the status of crawl jobs",
+    "Check the status of crawl jobs (queued, running, completed, or failed). Filter by source ID to see jobs for a specific website.",
     CrawlStatusSchema.shape,
     async ({ sourceId, limit }) => {
       try {
+        const { db, crawlJobs } = await import("@jigsaw/db");
+        const { eq } = await import("drizzle-orm");
         const rows = sourceId
           ? await db
               .select()

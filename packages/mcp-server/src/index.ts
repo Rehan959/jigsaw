@@ -15,6 +15,15 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("JigSaw MCP server running on stdio");
+
+  process.on("SIGINT", () => {
+    server.close();
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    server.close();
+    process.exit(0);
+  });
 }
 
 main().catch((error) => {
