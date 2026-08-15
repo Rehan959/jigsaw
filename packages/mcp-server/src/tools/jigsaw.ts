@@ -60,7 +60,9 @@ export function registerJigsawTools(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Unknown error";
+          error instanceof Error
+            ? error.message || String(error)
+            : "Unknown error";
         return {
           content: [
             {
@@ -91,7 +93,9 @@ export function registerJigsawTools(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Unknown error";
+          error instanceof Error
+            ? error.message || String(error)
+            : "Unknown error";
         return {
           content: [
             {
@@ -129,7 +133,9 @@ export function registerJigsawTools(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Unknown error";
+          error instanceof Error
+            ? error.message || String(error)
+            : "Unknown error";
         return {
           content: [
             {
@@ -166,7 +172,9 @@ export function registerJigsawTools(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Unknown error";
+          error instanceof Error
+            ? error.message || String(error)
+            : "Unknown error";
         return {
           content: [
             {
