@@ -1,14 +1,19 @@
 import { Pinecone } from "@pinecone-database/pinecone";
 import type { Chunk, SearchResult, SearchQuery } from "@jigsaw/shared";
 
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY!,
-});
+let _pinecone: Pinecone | null = null;
+
+function getPinecone(): Pinecone {
+  if (!_pinecone) {
+    _pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
+  }
+  return _pinecone;
+}
 
 const INDEX_NAME = process.env.PINECONE_INDEX || "jigsaw";
 
 function getIndex() {
-  return pinecone.index(INDEX_NAME);
+  return getPinecone().index(INDEX_NAME);
 }
 
 export async function upsertChunks(
