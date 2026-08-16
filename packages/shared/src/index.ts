@@ -1,3 +1,5 @@
+export { DEFAULT_USER_ID } from "./constants.js";
+
 export type {
   CrawlStatus,
   Source,

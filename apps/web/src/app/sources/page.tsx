@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Globe, Clock, Calendar, RefreshCw, Plus, Trash } from "lucide-react";
+import { Globe, Clock, Calendar, RefreshCw, Plus, Trash, ArrowRight, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/useToast";
+import { ToastContainer } from "@/components/Toast";
 
 interface Source {
   id: string;
@@ -34,6 +36,8 @@ export default function SourcesPage() {
   const [newSource, setNewSource] = useState({ url: "", name: "" });
   const [adding, setAdding] = useState(false);
   const [crawling, setCrawling] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Source | null>(null);
+  const { toasts, toast, dismiss } = useToast();
 
   const fetchSources = async () => {
     try {
@@ -74,37 +78,47 @@ export default function SourcesPage() {
         setShowAddModal(false);
         setNewSource({ url: "", name: "" });
         fetchSources();
+        toast("Source added successfully", "success");
+      } else {
+        toast("Failed to add source", "error");
       }
     } catch (error) {
       console.error("Failed to add source:", error);
+      toast("Failed to add source", "error");
     } finally {
       setAdding(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this source?")) return;
-
     try {
       await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/sources/${id}`,
         { method: "DELETE" }
       );
       fetchSources();
+      toast("Source deleted", "success");
     } catch (error) {
       console.error("Failed to delete source:", error);
+      toast("Failed to delete source", "error");
     }
   };
 
   const handleCrawl = async (sourceId: string) => {
     setCrawling(sourceId);
     try {
-      await fetch(
+      const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/jobs/crawl/${sourceId}`,
         { method: "POST" }
       );
+      if (res.ok) {
+        toast("Crawl queued", "success");
+      } else {
+        toast("Failed to start crawl", "error");
+      }
     } catch (error) {
       console.error("Failed to start crawl:", error);
+      toast("Failed to start crawl", "error");
     } finally {
       setCrawling(null);
     }
@@ -120,6 +134,8 @@ export default function SourcesPage() {
 
   return (
     <div className="min-h-screen">
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
+
       {/* Header */}
       <section className="py-12 border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -217,16 +233,54 @@ export default function SourcesPage() {
               </CardContent>
             </Card>
           ) : sources.length === 0 ? (
-            <Card className="text-center py-16">
-              <CardContent>
+            /* Onboarding checklist for first-use */
+            <Card className="text-center py-12">
+              <CardContent className="max-w-lg mx-auto">
                 <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <Globe className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No sources yet</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Add your first website source to start building your knowledge base.
+                <h3 className="text-2xl font-semibold mb-2">Get started in 3 steps:</h3>
+                <p className="text-muted-foreground mb-8">
+                  Set up your knowledge base in minutes.
                 </p>
-                <Button onClick={() => setShowAddModal(true)}>
+
+                <div className="space-y-4 text-left mb-8">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-accent/50 border border-border">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-primary font-bold text-lg">1</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold">Add a source</div>
+                      <div className="text-sm text-muted-foreground">Enter a URL to crawl</div>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-accent/50 border border-border">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-primary font-bold text-lg">2</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold">Crawl it</div>
+                      <div className="text-sm text-muted-foreground">We&apos;ll extract clean content</div>
+                    </div>
+                    <RefreshCw className="h-5 w-5 text-muted-foreground shrink-0" />
+                  </div>
+
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-accent/50 border border-border">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-primary font-bold text-lg">3</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold">Search it</div>
+                      <div className="text-sm text-muted-foreground">Find anything with semantic search</div>
+                    </div>
+                    <SearchIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                  </div>
+                </div>
+
+                <Button onClick={() => setShowAddModal(true)} size="lg" className="text-base px-8">
+                  <Plus className="h-5 w-5" />
                   Add Your First Source
                 </Button>
               </CardContent>
@@ -298,7 +352,7 @@ export default function SourcesPage() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDelete(source.id)}
+                            onClick={() => setDeleteTarget(source)}
                             className="gap-1.5"
                             aria-label={`Delete ${source.name || getDomainFromUrl(source.url)}`}
                           >
@@ -378,6 +432,34 @@ export default function SourcesPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Source</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &ldquo;{deleteTarget?.name || (deleteTarget ? getDomainFromUrl(deleteTarget.url) : "")}&rdquo;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteTarget) {
+                  handleDelete(deleteTarget.id);
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

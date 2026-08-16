@@ -34,14 +34,14 @@ export function registerAddSourceTool(server: McpServer): void {
 
       try {
         const { db, sources } = await import("@jigsaw/db");
-        const defaultUserId = "00000000-0000-0000-0000-000000000001";
+        const { DEFAULT_USER_ID } = await import("@jigsaw/shared");
         const displayName =
           name || new URL(url).hostname.replace("www.", "");
 
         const result = await db
           .insert(sources)
           .values({
-            userId: defaultUserId,
+            userId: DEFAULT_USER_ID,
             url,
             name: displayName,
           })

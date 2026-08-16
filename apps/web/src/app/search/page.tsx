@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, X, Package } from "lucide-react";
+import { Search, X, Package, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 interface SearchResult {
   id: string;
   score: number;
@@ -32,6 +33,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function SearchPage() {
 
     setLoading(true);
     setSearched(true);
+    setError(null);
     const startTime = Date.now();
 
     try {
@@ -55,11 +58,13 @@ export default function SearchPage() {
           body: JSON.stringify({ query, limit: 10 }),
         }
       );
+      if (!res.ok) throw new Error(`Search failed (HTTP ${res.status})`);
       const data = await res.json();
       setResults(data.results || []);
       setSearchTime(Date.now() - startTime);
-    } catch (error) {
-      console.error("Search failed:", error);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setError(err instanceof Error ? err.message : "Search failed. Please try again.");
       setResults([]);
     } finally {
       setLoading(false);
@@ -175,6 +180,20 @@ export default function SearchPage() {
       {/* Results Section */}
       <section className="py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Error State */}
+          {error && !loading && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Search Error</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>{error}</span>
+                <Button variant="outline" size="sm" onClick={handleSearch} className="ml-4 shrink-0">
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Loading State */}
           {loading && (
             <div className="space-y-4">

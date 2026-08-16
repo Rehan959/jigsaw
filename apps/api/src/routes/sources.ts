@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db, sources } from "@jigsaw/db";
+import { DEFAULT_USER_ID } from "@jigsaw/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -27,7 +28,7 @@ sourcesRouter.post("/", async (req, res) => {
     const [source] = await db
       .insert(sources)
       .values({
-        userId: "00000000-0000-0000-0000-000000000000",
+        userId: DEFAULT_USER_ID,
         url: body.url,
         name: body.name,
         crawlFrequency: body.crawlFrequency,

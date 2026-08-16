@@ -2,5 +2,38 @@
   "name": "@jigsaw/ingestion",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@jigsaw/shared": "workspace:*",
+    "@jigsaw/db": "workspace:*",
+    "zod": "^3.24.0"
+  },
+  "peerDependencies": {
+    "openai": "^4.0.0",
+    "@pinecone-database/pinecone": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": {
+      "optional": true
+    },
+    "@pinecone-database/pinecone": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^22.0.0"
+  }
 }

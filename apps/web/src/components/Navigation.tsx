@@ -46,7 +46,7 @@ export default function Navigation() {
             <span className="text-lg font-semibold tracking-tight">JigSaw</span>
           </Link>
           <Button asChild size="sm">
-            <Link href="/search">Get Started</Link>
+            <Link href="/sources">Get Started</Link>
           </Button>
         </div>
       </nav>
@@ -87,22 +87,22 @@ export default function Navigation() {
 
         <div className="flex items-center gap-3">
           <Button asChild size="sm">
-            <Link href="/search">Get Started</Link>
+            <Link href="/sources">Get Started</Link>
           </Button>
         </div>
       </motion.nav>
 
-      {/* Mobile menu button */}
-      <div className="fixed top-4 right-4 z-50 md:hidden">
-        <Button
-          variant="outline"
-          size="icon"
+      {/* Mobile menu button — inside the mobile nav bar */}
+      <div className="fixed top-3 right-4 z-50 md:hidden">
+        <button
           onClick={() => setIsOpen(!isOpen)}
           aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={isOpen}
+          aria-controls="mobile-menu"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background/80 backdrop-blur-xl text-foreground hover:bg-accent transition-colors"
         >
           {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        </button>
       </div>
 
       {/* Mobile menu */}
@@ -113,6 +113,7 @@ export default function Navigation() {
           transition={{ duration: 0.2 }}
           className="fixed top-20 left-4 right-4 z-50 bg-background/95 backdrop-blur-xl border border-border rounded-2xl p-6 md:hidden"
           role="menu"
+          id="mobile-menu"
         >
           <div className="flex flex-col gap-2">
             {navItems.map((item) => {
@@ -135,7 +136,7 @@ export default function Navigation() {
             })}
             <div className="pt-3 mt-1 border-t border-border">
               <Button asChild className="w-full">
-                <Link href="/search" onClick={() => setIsOpen(false)}>
+                <Link href="/sources" onClick={() => setIsOpen(false)}>
                   Get Started
                 </Link>
               </Button>
