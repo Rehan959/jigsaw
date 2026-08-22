@@ -424,3 +424,54 @@ bun run build      # Should compile all packages
 bun run dev        # Should start api + web in dev mode
 bun run check-types # TypeScript validation across all packages
 ```
+
+<!-- AUTONOMOUS DECISION LOG -->
+## Decision Audit Trail
+
+| # | Phase | Decision | Classification | Principle | Rationale | Rejected |
+|---|-------|----------|-----------|-----------|----------|----------|
+| 1 | CEO | Defer demand validation | Mechanical | P6 | User is primary user, self-validating for demo | No |
+| 2 | CEO | Focus on crawler + ingestion stubs first | Taste | P1 | Two empty packages block the entire pipeline | No |
+| 3 | CEO | Keep locked tech stack | Mechanical | P3 | Stack already partially built, changing adds friction | No |
+| 4 | CEO | Defer competition analysis | Mechanical | P3 | Demo context, not building to compete | No |
+| 5 | CEO | Treat web as admin dashboard | Taste | P5 | MCP server is the product, web is secondary | No |
+| 6 | CEO | Prioritize working end-to-end pipeline | Mechanical | P1 | 6-month regret is architecture without demo | No |
+| 7 | CEO | Add quality validation steps | Mechanical | P1 | Completeness principle — verify data quality | No |
+| 8 | CEO | Laptop demo (no auth/deployment) | Mechanical | P6 | Fastest path to sponsor showing | No |
+| 9 | Design | Add toast system | Mechanical | P1 | Every page needs success/error feedback | No |
+| 10 | Design | Fix Get Started routing | Mechanical | P1 | New users hit empty search page | No |
+| 11 | Design | Fix CSS primary token to purple | Mechanical | P1 | Design system inconsistency | No |
+| 12 | Design | Add error state for search | Mechanical | P1 | Users can't distinguish "no data" from "broken" | No |
+| 13 | Design | Add first-use onboarding | Mechanical | P1 | Zero guidance for first-time users | No |
+| 14 | Eng | Implement stub packages | Mechanical | P1 | Core task — blocks entire pipeline | No |
+| 15 | Eng | Add DB migrations | Mechanical | P1 | Schema defined but never migrated | No |
+| 16 | Eng | Add ingestion idempotency design | Mechanical | P1 | Prevents duplicate chunks on re-run | No |
+| 17 | Eng | Add browser pool + resource limits | Mechanical | P1 | Crawler needs resource management | No |
+| 18 | Eng | Defer auth middleware | Mechanical | P3 | Demo on localhost, no external exposure | No |
+| 19 | Eng | Defer SSRF protection | Mechanical | P3 | Demo on localhost only | No |
+| 20 | Eng | Fix jobs polling death | Mechanical | P5 | Explicit fix for broken behavior | No |
+| 21 | Eng | Add React error boundaries | Mechanical | P1 | White screen on render errors | No |
+| 22 | Eng | Add CORS allowlist | Mechanical | P1 | Security best practice even for demo | No |
+| 23 | Eng | Use lazy singletons for MCP clients | Mechanical | P5 | Connection churn on every call | No |
+| 24 | Eng | Add Zod validation for search results | Mechanical | P1 | Prevent crashes on malformed responses | No |
+| 25 | DX | Add docker-compose.yml | Mechanical | P1 | 5 external services required, no one-command start | No |
+| 26 | DX | Add shared error handler | Mechanical | P1 | Raw exceptions exposed to clients | No |
+| 27 | DX | Add API integration tests | Mechanical | P1 | Zero test coverage for API | No |
+| 28 | DX | Fix shared package types exports | Mechanical | P1 | TypeScript consumers may not resolve types | No |
+| 29 | DX | Pin turbo version | Mechanical | P1 | "latest" is risky for CI reproducibility | No |
+| 30 | DX | Defer vector DB abstraction | Mechanical | P3 | Pinecone-only for demo | No |
+| 31 | DX | Defer changelog/versioning | Mechanical | P3 | Post-demo improvement | No |
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/autoplan` | Strategy & scope | 1 | COMPLETE | 8 findings (3 critical, 3 high, 2 medium) |
+| Design Review | `/autoplan` | UI/UX design | 1 | COMPLETE | 21 findings (3 critical, 7 high, 9 medium, 2 low) |
+| Eng Review | `/autoplan` | Architecture & code quality | 1 | COMPLETE | 19 findings (2 critical, 7 high, 8 medium, 1 low) |
+| DX Review | `/autoplan` | Developer experience | 1 | COMPLETE | 24 findings (1 critical, 7 high, 10 medium, 6 low) |
+
+- **VERDICT:** ALL 4 PHASES COMPLETE — 72 findings total, all auto-decided using the 6 principles.
+- **SINGLE-MODEL:** Codex unavailable (npm/bun conflict). All reviews via Claude subagent only.
+- **DECISIONS:** 31 auto-decided, 0 taste decisions surfaced, 0 user challenges.
+- **NEXT STEP:** Implement the two stub packages (crawler + ingestion), then wire the API.
