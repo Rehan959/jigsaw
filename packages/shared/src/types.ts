@@ -55,3 +55,19 @@ export interface SearchQuery {
   limit?: number;
   threshold?: number;
 }
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+}
+
+export interface ErrorResponse {
+  error: string;
+  code: string;
+  details?: unknown;
+}

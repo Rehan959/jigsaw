@@ -16,6 +16,7 @@ export const sources = pgTable("sources", {
   name: varchar("name", { length: 255 }).notNull(),
   crawlFrequency: varchar("crawl_frequency", { length: 50 }),
   lastCrawledAt: timestamp("last_crawled_at"),
+  visibility: varchar("visibility", { length: 10 }).default("private").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

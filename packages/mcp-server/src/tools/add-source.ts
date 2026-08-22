@@ -1,6 +1,54 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
 import { logToolCall, generateRequestId } from "./logger.js";
+import { getApiClient, type ApiError } from "../api-client.js";
+
+function validateCrawlUrl(urlString: string): { valid: boolean; error?: string } {
+  try {
+    const url = new URL(urlString);
+
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return { valid: false, error: "Only HTTP and HTTPS URLs are allowed" };
+    }
+
+    const hostname = url.hostname.toLowerCase();
+
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      hostname === "[::1]"
+    ) {
+      return { valid: false, error: "Localhost URLs are not allowed" };
+    }
+
+    if (/^10\./.test(hostname)) {
+      return { valid: false, error: "Private network URLs are not allowed" };
+    }
+    if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname)) {
+      return { valid: false, error: "Private network URLs are not allowed" };
+    }
+    if (/^192\.168\./.test(hostname)) {
+      return { valid: false, error: "Private network URLs are not allowed" };
+    }
+    if (/^169\.254\./.test(hostname)) {
+      return { valid: false, error: "Link-local URLs are not allowed" };
+    }
+
+    const blockedHosts = [
+      "metadata.google.internal",
+      "metadata.aws.internal",
+      "169.254.169.254",
+    ];
+    if (blockedHosts.includes(hostname)) {
+      return { valid: false, error: "Cloud metadata URLs are not allowed" };
+    }
+
+    return { valid: true };
+  } catch {
+    return { valid: false, error: "Invalid URL format" };
+  }
+}
 
 const inputSchema = z.object({
   url: z
@@ -17,6 +65,17 @@ const inputSchema = z.object({
 
 type AddSourceArgs = { url: string; name?: string };
 
+function formatApiError(error: unknown): string {
+  if (error && typeof error === "object" && "status" in error) {
+    const apiErr = error as ApiError;
+    if (apiErr.status === 401) return "Authentication failed. API key is not configured on the server.";
+    if (apiErr.status === 403) return "Access denied. Invalid API key.";
+    if (apiErr.status === 429) return "Rate limited. Try again later.";
+    return `API error (${apiErr.status}): ${apiErr.message}`;
+  }
+  return error instanceof Error ? error.message : "Unknown error";
+}
+
 export function registerAddSourceTool(server: McpServer): void {
   server.registerTool(
     "add_source",
@@ -32,27 +91,26 @@ export function registerAddSourceTool(server: McpServer): void {
         `[jigsaw] add_source: url="${url}" request_id=${requestId}`,
       );
 
+      const urlCheck = validateCrawlUrl(url);
+      if (!urlCheck.valid) {
+        logToolCall("add_source", { url }, startTime, undefined, true);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Invalid URL: ${urlCheck.error}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
       try {
-        const { db, sources } = await import("@jigsaw/db");
-        const defaultUserId = "00000000-0000-0000-0000-000000000001";
-        const displayName =
-          name || new URL(url).hostname.replace("www.", "");
-
-        const result = await db
-          .insert(sources)
-          .values({
-            userId: defaultUserId,
-            url,
-            name: displayName,
-          })
-          .returning({
-            id: sources.id,
-            url: sources.url,
-            name: sources.name,
-            createdAt: sources.createdAt,
-          });
-
-        const source = result[0];
+        const client = getApiClient();
+        const { data } = await client.post<{ source: { id: string; url: string; name: string; createdAt: string } }>(
+          "/api/sources",
+          { url, name },
+        );
 
         logToolCall("add_source", { url }, startTime);
 
@@ -63,12 +121,7 @@ export function registerAddSourceTool(server: McpServer): void {
               text: JSON.stringify(
                 {
                   status: "success",
-                  source: {
-                    id: source.id,
-                    url: source.url,
-                    name: source.name,
-                    createdAt: source.createdAt.toISOString(),
-                  },
+                  source: data.source,
                 },
                 null,
                 2,
@@ -78,13 +131,11 @@ export function registerAddSourceTool(server: McpServer): void {
         };
       } catch (error) {
         logToolCall("add_source", { url }, startTime, undefined, true);
-        const message =
-          error instanceof Error ? error.message : "Unknown error";
         return {
           content: [
             {
               type: "text" as const,
-              text: `Error adding source: ${message}`,
+              text: `Error adding source: ${formatApiError(error)}`,
             },
           ],
           isError: true,

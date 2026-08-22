@@ -1,12 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Globe, Clock, Calendar, RefreshCw, Plus, Trash } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  Globe,
+  Clock,
+  Calendar,
+  RefreshCw,
+  Plus,
+  Trash,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -15,46 +27,58 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { api, type Source } from "@/lib/api";
+import { isSafeUrl } from "@/lib/utils";
 
-interface Source {
-  id: string;
-  url: string;
-  name: string;
-  crawlFrequency: string | null;
-  lastCrawledAt: string | null;
-  createdAt: string;
-}
+const PAGE_SIZE = 10;
 
 export default function SourcesPage() {
+  const prefersReducedMotion = useReducedMotion();
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newSource, setNewSource] = useState({ url: "", name: "" });
+  const [newSource, setNewSource] = useState({
+    url: "",
+    name: "",
+    visibility: "private" as "public" | "private",
+  });
   const [adding, setAdding] = useState(false);
   const [crawling, setCrawling] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [visibilityFilter, setVisibilityFilter] = useState<
+    "all" | "public" | "private"
+  >("all");
 
-  const fetchSources = async () => {
+  const fetchSources = useCallback(async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/sources`
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setSources(data.sources || []);
+      setLoading(true);
+      const params: { limit: number; offset: number; visibility?: "public" | "private" } = {
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+      };
+      if (visibilityFilter !== "all") {
+        params.visibility = visibilityFilter;
+      }
+      const data = await api.getSources(params);
+      setSources(data.sources);
+      setTotal(data.total);
       setError(null);
-    } catch (error) {
-      console.error("Failed to fetch sources:", error);
-      setError("Unable to connect to the backend. Make sure the API server is running on port 3001.");
+    } catch {
+      setError(
+        "Unable to connect to the backend. Make sure the API server is running on port 3001."
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, visibilityFilter]);
 
   useEffect(() => {
     fetchSources();
-  }, []);
+  }, [fetchSources]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,21 +86,17 @@ export default function SourcesPage() {
 
     setAdding(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/sources`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newSource),
-        }
-      );
-      if (res.ok) {
-        setShowAddModal(false);
-        setNewSource({ url: "", name: "" });
-        fetchSources();
-      }
-    } catch (error) {
-      console.error("Failed to add source:", error);
+      await api.createSource({
+        url: newSource.url,
+        name: newSource.name || newSource.url,
+        visibility: newSource.visibility,
+      });
+      setShowAddModal(false);
+      setNewSource({ url: "", name: "", visibility: "private" });
+      setPage(0);
+      fetchSources();
+    } catch (err) {
+      console.error("Failed to add source:", err);
     } finally {
       setAdding(false);
     }
@@ -86,27 +106,31 @@ export default function SourcesPage() {
     if (!confirm("Are you sure you want to delete this source?")) return;
 
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/sources/${id}`,
-        { method: "DELETE" }
-      );
+      await api.deleteSource(id);
       fetchSources();
-    } catch (error) {
-      console.error("Failed to delete source:", error);
+    } catch (err) {
+      console.error("Failed to delete source:", err);
     }
   };
 
   const handleCrawl = async (sourceId: string) => {
     setCrawling(sourceId);
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/jobs/crawl/${sourceId}`,
-        { method: "POST" }
-      );
-    } catch (error) {
-      console.error("Failed to start crawl:", error);
+      await api.triggerCrawl(sourceId);
+    } catch (err) {
+      console.error("Failed to start crawl:", err);
     } finally {
       setCrawling(null);
+    }
+  };
+
+  const handleToggleVisibility = async (source: Source) => {
+    const newVisibility = source.visibility === "public" ? "private" : "public";
+    try {
+      await api.updateSource(source.id, { visibility: newVisibility });
+      fetchSources();
+    } catch (err) {
+      console.error("Failed to update visibility:", err);
     }
   };
 
@@ -119,126 +143,110 @@ export default function SourcesPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <section className="py-12 border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+    <div className="min-h-screen p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Sources
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your web sources and crawling schedule
+            </p>
+          </div>
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4" />
+            Add Source
+          </Button>
+        </motion.div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-2">
+          {(["all", "public", "private"] as const).map((f) => (
+            <Button
+              key={f}
+              variant={visibilityFilter === f ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setVisibilityFilter(f);
+                setPage(0);
+              }}
+              className="capitalize"
             >
-              <Badge variant="secondary" className="gap-2 mb-3">
-                <Globe className="h-3.5 w-3.5" />
-                Sources
-              </Badge>
-              <h1 className="text-3xl font-semibold tracking-tighter">
-                <span className="text-primary">Sources</span>
-              </h1>
-              <p className="text-muted-foreground mt-2 font-light">
-                Manage your web sources and crawling schedule
-              </p>
-            </motion.div>
-            <Button onClick={() => setShowAddModal(true)}>
-              <Plus className="h-4 w-4" />
-              Add Source
+              {f} ({total})
             </Button>
-          </div>
+          ))}
         </div>
-      </section>
 
-      {/* Stats */}
-      {!loading && sources.length > 0 && (
-        <section className="py-6 border-b border-border">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold">{sources.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Sources</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-primary">
-                    {sources.filter((s) => s.lastCrawledAt).length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Crawled</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-amber-500">
-                    {sources.filter((s) => !s.lastCrawledAt).length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Pending</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Sources List */}
-      <section className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-muted animate-pulse shrink-0" />
-                      <div className="flex-1">
-                        <div className="h-5 w-1/3 bg-muted animate-pulse rounded mb-2" />
-                        <div className="h-4 w-1/2 bg-muted animate-pulse rounded mb-4" />
-                        <div className="h-4 w-1/4 bg-muted animate-pulse rounded" />
-                      </div>
+        {/* Sources List */}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-muted animate-pulse shrink-0" />
+                    <div className="flex-1">
+                      <div className="h-5 w-1/3 bg-muted animate-pulse rounded mb-2" />
+                      <div className="h-4 w-1/2 bg-muted animate-pulse rounded mb-4" />
+                      <div className="h-4 w-1/4 bg-muted animate-pulse rounded" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : error ? (
-            <Card className="text-center py-16">
-              <CardContent>
-                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-destructive/10 flex items-center justify-center">
-                  <Globe className="h-10 w-10 text-destructive" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Connection Error</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  {error}
-                </p>
-                <Button onClick={() => { setLoading(true); fetchSources(); }}>
-                  <RefreshCw className="h-4 w-4" />
-                  Retry
-                </Button>
-              </CardContent>
-            </Card>
-          ) : sources.length === 0 ? (
-            <Card className="text-center py-16">
-              <CardContent>
-                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Globe className="h-10 w-10 text-primary" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">No sources yet</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  Add your first website source to start building your knowledge base.
-                </p>
-                <Button onClick={() => setShowAddModal(true)}>
-                  Add Your First Source
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : error ? (
+          <Card className="text-center py-16">
+            <CardContent>
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                <Globe className="h-10 w-10 text-destructive" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Connection Error</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                {error}
+              </p>
+              <Button
+                onClick={() => {
+                  setLoading(true);
+                  fetchSources();
+                }}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        ) : sources.length === 0 ? (
+          <Card className="text-center py-16">
+            <CardContent>
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Globe className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">No sources yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                Add your first website source to start building your knowledge
+                base.
+              </p>
+              <Button onClick={() => setShowAddModal(true)}>
+                Add Your First Source
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
             <div className="grid gap-4">
               {sources.map((source, index) => (
                 <motion.div
                   key={source.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.3, delay: prefersReducedMotion ? 0 : index * 0.04 }}
                 >
                   <Card className="group">
                     <CardContent className="p-6">
@@ -253,7 +261,7 @@ export default function SourcesPage() {
                                 {source.name || getDomainFromUrl(source.url)}
                               </h3>
                               <a
-                                href={source.url}
+                                href={isSafeUrl(source.url) ? source.url : "#"}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200"
@@ -270,12 +278,30 @@ export default function SourcesPage() {
                             <span className="flex items-center gap-1.5">
                               <Calendar className="h-3.5 w-3.5" />
                               {source.lastCrawledAt
-                                ? `Last crawled ${new Date(source.lastCrawledAt).toLocaleDateString()}`
+                                ? `Last crawled ${new Date(
+                                    source.lastCrawledAt
+                                  ).toLocaleDateString()}`
                                 : "Never crawled"}
                             </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleVisibility(source)}
+                            className="gap-1.5"
+                            title={`Toggle visibility (currently ${source.visibility})`}
+                          >
+                            {source.visibility === "public" ? (
+                              <Eye className="h-4 w-4 text-emerald-500" />
+                            ) : (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className="hidden sm:inline capitalize">
+                              {source.visibility}
+                            </span>
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -291,7 +317,7 @@ export default function SourcesPage() {
                             ) : (
                               <>
                                 <RefreshCw className="h-4 w-4" />
-                                Crawl Now
+                                Crawl
                               </>
                             )}
                           </Button>
@@ -300,10 +326,11 @@ export default function SourcesPage() {
                             size="sm"
                             onClick={() => handleDelete(source.id)}
                             className="gap-1.5"
-                            aria-label={`Delete ${source.name || getDomainFromUrl(source.url)}`}
+                            aria-label={`Delete ${
+                              source.name || getDomainFromUrl(source.url)
+                            }`}
                           >
                             <Trash className="h-4 w-4" />
-                            Delete
                           </Button>
                         </div>
                       </div>
@@ -312,9 +339,40 @@ export default function SourcesPage() {
                 </motion.div>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Page {page + 1} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setPage((p) => Math.min(totalPages - 1, p + 1))
+                    }
+                    disabled={page >= totalPages - 1}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Add Source Dialog */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
@@ -332,7 +390,9 @@ export default function SourcesPage() {
                 id="source-url"
                 type="url"
                 value={newSource.url}
-                onChange={(e) => setNewSource({ ...newSource, url: e.target.value })}
+                onChange={(e) =>
+                  setNewSource({ ...newSource, url: e.target.value })
+                }
                 placeholder="https://example.com"
                 required
                 autoFocus
@@ -347,9 +407,50 @@ export default function SourcesPage() {
                 id="source-name"
                 type="text"
                 value={newSource.name}
-                onChange={(e) => setNewSource({ ...newSource, name: e.target.value })}
+                onChange={(e) =>
+                  setNewSource({ ...newSource, name: e.target.value })
+                }
                 placeholder="My Website"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Visibility</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={
+                    newSource.visibility === "private" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() =>
+                    setNewSource({ ...newSource, visibility: "private" })
+                  }
+                  className="gap-1.5"
+                >
+                  <EyeOff className="h-3.5 w-3.5" />
+                  Private
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    newSource.visibility === "public" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() =>
+                    setNewSource({ ...newSource, visibility: "public" })
+                  }
+                  className="gap-1.5"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Public
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {newSource.visibility === "public"
+                  ? "Anyone can find and search this source"
+                  : "Only you can access this source"}
+              </p>
             </div>
 
             <DialogFooter>
@@ -364,17 +465,7 @@ export default function SourcesPage() {
                 type="submit"
                 disabled={adding || !newSource.url.trim()}
               >
-                {adding ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Adding...
-                  </>
-                ) : (
-                  "Add Source"
-                )}
+                {adding ? "Adding..." : "Add Source"}
               </Button>
             </DialogFooter>
           </form>

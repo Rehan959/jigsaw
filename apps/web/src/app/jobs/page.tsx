@@ -54,7 +54,8 @@ export default function JobsPage() {
   const fetchJobs = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/jobs`
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/jobs`,
+        { credentials: "include" }
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();

@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
 import { logToolCall, generateRequestId } from "./logger.js";
+import { getApiClient, type ApiError } from "../api-client.js";
 
 const inputSchema = z.object({
   limit: z
@@ -11,6 +12,17 @@ const inputSchema = z.object({
 }) as any;
 
 type ListSourcesArgs = { limit: number };
+
+function formatApiError(error: unknown): string {
+  if (error && typeof error === "object" && "status" in error) {
+    const apiErr = error as ApiError;
+    if (apiErr.status === 401) return "Authentication failed. API key is not configured on the server.";
+    if (apiErr.status === 403) return "Access denied. Invalid API key.";
+    if (apiErr.status === 429) return "Rate limited. Try again later.";
+    return `API error (${apiErr.status}): ${apiErr.message}`;
+  }
+  return error instanceof Error ? error.message : "Unknown error";
+}
 
 export function registerListSourcesTool(server: McpServer): void {
   server.registerTool(
@@ -28,26 +40,19 @@ export function registerListSourcesTool(server: McpServer): void {
       );
 
       try {
-        const { db, sources } = await import("@jigsaw/db");
-        const results = await db
-          .select({
-            id: sources.id,
-            url: sources.url,
-            name: sources.name,
-            crawlFrequency: sources.crawlFrequency,
-            lastCrawledAt: sources.lastCrawledAt,
-            createdAt: sources.createdAt,
-          })
-          .from(sources)
-          .limit(limit || 20);
+        const client = getApiClient();
+        const { data } = await client.get<{ sources: Array<{
+          id: string;
+          url: string;
+          name: string;
+          crawlFrequency: string | null;
+          lastCrawledAt: string | null;
+          createdAt: string;
+        }> }>("/api/sources");
 
-        const formatted = results.map((r) => ({
-          ...r,
-          lastCrawledAt: r.lastCrawledAt?.toISOString() || null,
-          createdAt: r.createdAt.toISOString(),
-        }));
+        const sources = data.sources.slice(0, limit);
 
-        logToolCall("list_sources", { limit }, startTime, formatted.length);
+        logToolCall("list_sources", { limit }, startTime, sources.length);
 
         return {
           content: [
@@ -55,8 +60,8 @@ export function registerListSourcesTool(server: McpServer): void {
               type: "text" as const,
               text: JSON.stringify(
                 {
-                  sourceCount: formatted.length,
-                  sources: formatted,
+                  sourceCount: sources.length,
+                  sources,
                 },
                 null,
                 2,
@@ -66,13 +71,11 @@ export function registerListSourcesTool(server: McpServer): void {
         };
       } catch (error) {
         logToolCall("list_sources", { limit }, startTime, undefined, true);
-        const message =
-          error instanceof Error ? error.message : "Unknown error";
         return {
           content: [
             {
               type: "text" as const,
-              text: `Error listing sources: ${message}`,
+              text: `Error listing sources: ${formatApiError(error)}`,
             },
           ],
           isError: true,

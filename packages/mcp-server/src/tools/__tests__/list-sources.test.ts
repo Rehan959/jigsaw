@@ -1,16 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockLimit = vi.fn();
+const mockGet = vi.fn();
 
-vi.mock("@jigsaw/db", () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        limit: mockLimit,
-      })),
-    })),
-  },
-  sources: {},
+vi.mock("../../api-client.js", () => ({
+  getApiClient: () => ({
+    get: mockGet,
+  }),
 }));
 
 import { registerListSourcesTool } from "../list-sources.js";
@@ -37,17 +32,21 @@ describe("list_sources tool", () => {
   });
 
   it("returns sources on happy path", async () => {
-    const now = new Date("2025-01-15T10:00:00Z");
-    mockLimit.mockResolvedValue([
-      {
-        id: "src-1",
-        url: "https://example.com",
-        name: "Example",
-        crawlFrequency: "daily",
-        lastCrawledAt: now,
-        createdAt: now,
+    mockGet.mockResolvedValue({
+      data: {
+        sources: [
+          {
+            id: "src-1",
+            url: "https://example.com",
+            name: "Example",
+            crawlFrequency: "daily",
+            lastCrawledAt: "2025-01-15T10:00:00.000Z",
+            createdAt: "2025-01-15T10:00:00.000Z",
+          },
+        ],
       },
-    ]);
+      status: 200,
+    });
 
     const result = await handler({ limit: 20 });
 
@@ -56,10 +55,14 @@ describe("list_sources tool", () => {
     expect(parsed.sourceCount).toBe(1);
     expect(parsed.sources[0].id).toBe("src-1");
     expect(parsed.sources[0].createdAt).toBe("2025-01-15T10:00:00.000Z");
+    expect(mockGet).toHaveBeenCalledWith("/api/sources");
   });
 
-  it("returns empty array when database has no sources", async () => {
-    mockLimit.mockResolvedValue([]);
+  it("returns empty array when API has no sources", async () => {
+    mockGet.mockResolvedValue({
+      data: { sources: [] },
+      status: 200,
+    });
 
     const result = await handler({ limit: 20 });
 
@@ -69,11 +72,35 @@ describe("list_sources tool", () => {
     expect(parsed.sources).toEqual([]);
   });
 
-  it("passes custom limit parameter", async () => {
-    mockLimit.mockResolvedValue([]);
+  it("respects limit parameter", async () => {
+    const sources = Array.from({ length: 30 }, (_, i) => ({
+      id: `src-${i}`,
+      url: `https://example${i}.com`,
+      name: `Example ${i}`,
+      crawlFrequency: null,
+      lastCrawledAt: null,
+      createdAt: "2025-01-15T10:00:00.000Z",
+    }));
 
-    await handler({ limit: 5 });
+    mockGet.mockResolvedValue({
+      data: { sources },
+      status: 200,
+    });
 
-    expect(mockLimit).toHaveBeenCalledWith(5);
+    const result = await handler({ limit: 5 });
+
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.sourceCount).toBe(5);
+  });
+
+  it("returns error on API failure", async () => {
+    const apiError = new Error("Internal server error") as any;
+    apiError.status = 500;
+    mockGet.mockRejectedValue(apiError);
+
+    const result = await handler({ limit: 20 });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("API error (500)");
   });
 });

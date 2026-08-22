@@ -1,33 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockLimitCrawl = vi.fn();
-const mockWhere = vi.fn();
-const mockOrderBy = vi.fn();
+const mockGet = vi.fn();
 
-vi.mock("@jigsaw/db", () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        innerJoin: vi.fn(() => ({
-          where: mockWhere.mockReturnValue({
-            orderBy: mockOrderBy.mockReturnValue({
-              limit: mockLimitCrawl,
-            }),
-          }),
-          orderBy: mockOrderBy.mockReturnValue({
-            limit: mockLimitCrawl,
-          }),
-        })),
-      })),
-    })),
-  },
-  crawlJobs: {},
-  sources: {},
-}));
-
-vi.mock("drizzle-orm", () => ({
-  eq: vi.fn((_col: any, val: any) => ({ _eq: val })),
-  desc: vi.fn((col: any) => ({ _desc: col })),
+vi.mock("../../api-client.js", () => ({
+  getApiClient: () => ({
+    get: mockGet,
+  }),
 }));
 
 import { registerCrawlStatusTool } from "../crawl-status.js";
@@ -54,20 +32,22 @@ describe("crawl_status tool", () => {
   });
 
   it("returns jobs on happy path", async () => {
-    const now = new Date("2025-01-15T10:00:00Z");
-    mockLimitCrawl.mockResolvedValue([
-      {
-        id: "job-1",
-        sourceId: "src-1",
-        sourceName: "Example",
-        sourceUrl: "https://example.com",
-        status: "completed",
-        startedAt: now,
-        completedAt: now,
-        error: null,
-        createdAt: now,
+    mockGet.mockResolvedValue({
+      data: {
+        jobs: [
+          {
+            id: "job-1",
+            sourceId: "src-1",
+            status: "completed",
+            startedAt: "2025-01-15T10:00:00.000Z",
+            completedAt: "2025-01-15T10:05:00.000Z",
+            error: null,
+            createdAt: "2025-01-15T10:00:00.000Z",
+          },
+        ],
       },
-    ]);
+      status: 200,
+    });
 
     const result = await handler({ limit: 10 });
 
@@ -75,10 +55,14 @@ describe("crawl_status tool", () => {
     const parsed = JSON.parse(result.content[0].text);
     expect(parsed.jobCount).toBe(1);
     expect(parsed.jobs[0].status).toBe("completed");
+    expect(mockGet).toHaveBeenCalledWith("/api/jobs", {});
   });
 
   it("returns empty results when no jobs exist", async () => {
-    mockLimitCrawl.mockResolvedValue([]);
+    mockGet.mockResolvedValue({
+      data: { jobs: [] },
+      status: 200,
+    });
 
     const result = await handler({ limit: 10 });
 
@@ -88,17 +72,70 @@ describe("crawl_status tool", () => {
     expect(parsed.jobs).toEqual([]);
   });
 
-  it("passes sourceId filter by calling where", async () => {
-    mockLimitCrawl.mockResolvedValue([]);
+  it("passes sourceId filter to API", async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        jobs: [
+          {
+            id: "job-1",
+            sourceId: "550e8400-e29b-41d4-a716-446655440000",
+            status: "completed",
+            startedAt: null,
+            completedAt: null,
+            error: null,
+            createdAt: "2025-01-15T10:00:00.000Z",
+          },
+        ],
+      },
+      status: 200,
+    });
 
-    await handler({
+    const result = await handler({
       sourceId: "550e8400-e29b-41d4-a716-446655440000",
       limit: 10,
     });
 
-    expect(mockWhere).toHaveBeenCalled();
-    expect(mockOrderBy).toHaveBeenCalled();
-    expect(mockLimitCrawl).toHaveBeenCalled();
+    expect(mockGet).toHaveBeenCalledWith("/api/jobs", {
+      sourceId: "550e8400-e29b-41d4-a716-446655440000",
+    });
+    expect(result.isError).toBeFalsy();
+  });
+
+  it("filters jobs by sourceId client-side", async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        jobs: [
+          {
+            id: "job-1",
+            sourceId: "src-1",
+            status: "completed",
+            startedAt: null,
+            completedAt: null,
+            error: null,
+            createdAt: "2025-01-15T10:00:00.000Z",
+          },
+          {
+            id: "job-2",
+            sourceId: "src-2",
+            status: "running",
+            startedAt: null,
+            completedAt: null,
+            error: null,
+            createdAt: "2025-01-15T10:00:00.000Z",
+          },
+        ],
+      },
+      status: 200,
+    });
+
+    const result = await handler({
+      sourceId: "src-1",
+      limit: 10,
+    });
+
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.jobCount).toBe(1);
+    expect(parsed.jobs[0].sourceId).toBe("src-1");
   });
 
   it("rejects invalid sourceId format via Zod validation", async () => {
@@ -123,5 +160,16 @@ describe("crawl_status tool", () => {
       sourceId: "550e8400-e29b-41d4-a716-446655440000",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("returns error on API failure", async () => {
+    const apiError = new Error("Internal server error") as any;
+    apiError.status = 500;
+    mockGet.mockRejectedValue(apiError);
+
+    const result = await handler({ limit: 10 });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("API error (500)");
   });
 });

@@ -1,20 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockEmbeddingsCreate = vi.fn();
-const mockQuery = vi.fn();
+const mockPost = vi.fn();
 
-vi.mock("openai", () => ({
-  default: class MockOpenAI {
-    embeddings = { create: mockEmbeddingsCreate };
-  },
-}));
-
-vi.mock("@pinecone-database/pinecone", () => ({
-  Pinecone: class MockPinecone {
-    index(_name: string) {
-      return { query: mockQuery };
-    }
-  },
+vi.mock("../../api-client.js", () => ({
+  getApiClient: () => ({
+    post: mockPost,
+  }),
 }));
 
 import { registerSearchTool } from "../search.js";
@@ -41,24 +32,25 @@ describe("search_knowledge_base tool", () => {
   });
 
   it("returns results on happy path", async () => {
-    mockEmbeddingsCreate.mockResolvedValue({
-      data: [{ embedding: [0.1, 0.2, 0.3] }],
-    });
-    mockQuery.mockResolvedValue({
-      matches: [
-        {
-          id: "chunk-1",
-          score: 0.92,
-          metadata: {
+    mockPost.mockResolvedValue({
+      data: {
+        results: [
+          {
+            id: "chunk-1",
+            score: 0.92,
             content: "Test content",
-            sourceId: "src-1",
-            url: "https://example.com",
-            title: "Example",
-            chunkIndex: 0,
-            totalChunks: 3,
+            metadata: {
+              sourceId: "src-1",
+              url: "https://example.com",
+              title: "Example",
+              chunkIndex: 0,
+              totalChunks: 3,
+            },
           },
-        },
-      ],
+        ],
+        count: 1,
+      },
+      status: 200,
     });
 
     const result = await searchHandler({
@@ -73,13 +65,19 @@ describe("search_knowledge_base tool", () => {
     expect(parsed.resultCount).toBe(1);
     expect(parsed.results[0].id).toBe("chunk-1");
     expect(parsed.results[0].score).toBe(0.92);
+    expect(mockPost).toHaveBeenCalledWith("/api/search", {
+      query: "test query",
+      sourceId: undefined,
+      limit: 5,
+      threshold: undefined,
+    });
   });
 
-  it("returns empty results when Pinecone has no matches", async () => {
-    mockEmbeddingsCreate.mockResolvedValue({
-      data: [{ embedding: [0.1, 0.2, 0.3] }],
+  it("returns empty results when API has no matches", async () => {
+    mockPost.mockResolvedValue({
+      data: { results: [], count: 0 },
+      status: 200,
     });
-    mockQuery.mockResolvedValue({ matches: [] });
 
     const result = await searchHandler({
       query: "no results query",
@@ -92,10 +90,10 @@ describe("search_knowledge_base tool", () => {
     expect(parsed.results).toEqual([]);
   });
 
-  it("returns error when OpenAI API fails", async () => {
-    mockEmbeddingsCreate.mockRejectedValue(
-      new Error("Unauthorized: invalid API key"),
-    );
+  it("returns error when API fails with auth error", async () => {
+    const apiError = new Error("Unauthorized") as any;
+    apiError.status = 401;
+    mockPost.mockRejectedValue(apiError);
 
     const result = await searchHandler({
       query: "test query",
@@ -104,6 +102,20 @@ describe("search_knowledge_base tool", () => {
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("Authentication failed");
+  });
+
+  it("returns error when API fails with 500", async () => {
+    const apiError = new Error("Internal server error") as any;
+    apiError.status = 500;
+    mockPost.mockRejectedValue(apiError);
+
+    const result = await searchHandler({
+      query: "test query",
+      limit: 5,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("API error (500)");
   });
 
   it("rejects non-string query via Zod validation", async () => {
@@ -130,11 +142,11 @@ describe("search_knowledge_base tool", () => {
     expect(result.success).toBe(false);
   });
 
-  it("passes sourceId filter to Pinecone", async () => {
-    mockEmbeddingsCreate.mockResolvedValue({
-      data: [{ embedding: [0.1, 0.2, 0.3] }],
+  it("passes sourceId filter to API", async () => {
+    mockPost.mockResolvedValue({
+      data: { results: [], count: 0 },
+      status: 200,
     });
-    mockQuery.mockResolvedValue({ matches: [] });
 
     await searchHandler({
       query: "test",
@@ -142,10 +154,31 @@ describe("search_knowledge_base tool", () => {
       limit: 5,
     });
 
-    expect(mockQuery).toHaveBeenCalledWith(
+    expect(mockPost).toHaveBeenCalledWith(
+      "/api/search",
       expect.objectContaining({
-        filter: { sourceId: "src-123" },
+        sourceId: "src-123",
       }),
     );
+  });
+
+  it("retries on transient failures", async () => {
+    const transientError = new Error("ECONNRESET") as any;
+    transientError.status = 503;
+
+    mockPost
+      .mockRejectedValueOnce(transientError)
+      .mockResolvedValueOnce({
+        data: { results: [], count: 0 },
+        status: 200,
+      });
+
+    const result = await searchHandler({
+      query: "test query",
+      limit: 5,
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(mockPost).toHaveBeenCalledTimes(2);
   });
 });

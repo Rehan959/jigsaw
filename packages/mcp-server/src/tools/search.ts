@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import type { McpServer } from "@modelcontextprotocol/server";
 import { logToolCall, generateRequestId } from "./logger.js";
+import { getApiClient, type ApiError } from "../api-client.js";
 
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -28,22 +29,26 @@ async function withRetry<T>(
 }
 
 function actionableMessage(error: unknown): string {
+  if (error && typeof error === "object" && "status" in error) {
+    const apiErr = error as ApiError;
+    if (apiErr.status === 401) return "Authentication failed. API key is not configured on the server.";
+    if (apiErr.status === 403) return "Access denied. Invalid API key.";
+    if (apiErr.status === 429) return "Rate limited. Try again later.";
+    return `API error (${apiErr.status}): ${apiErr.message}`;
+  }
   const msg = error instanceof Error ? error.message : String(error);
   if (
     msg.includes("Unauthorized") ||
     msg.includes("401") ||
     msg.includes("invalid_api_key")
   ) {
-    return `Authentication failed. Check OPENAI_API_KEY env var. Original: ${msg}`;
-  }
-  if (msg.includes("invalid_api_key") || msg.includes("Incorrect API key")) {
-    return `Invalid OpenAI API key. Check OPENAI_API_KEY env var. Original: ${msg}`;
+    return `Authentication failed. OpenAI API key is not configured on the server.`;
   }
   if (msg.includes("Pinecone") && msg.includes("403")) {
-    return `Pinecone access denied. Check PINECONE_API_KEY env var. Original: ${msg}`;
+    return `Pinecone access denied. API key is not configured on the server.`;
   }
   if (msg.includes("404") && msg.includes("Index")) {
-    return `Pinecone index not found. Check PINECONE_INDEX env var. Original: ${msg}`;
+    return `Pinecone index not found. Index is not configured on the server.`;
   }
   return msg;
 }
@@ -84,6 +89,24 @@ type SearchArgs = {
   threshold?: number;
 };
 
+type SearchResult = {
+  id: string;
+  score: number;
+  content: string;
+  metadata: {
+    sourceId: string;
+    url: string;
+    title: string;
+    chunkIndex: number;
+    totalChunks: number;
+  };
+};
+
+type SearchResponse = {
+  results: SearchResult[];
+  count: number;
+};
+
 export function registerSearchTool(server: McpServer): void {
   server.registerTool(
     "search_knowledge_base",
@@ -100,62 +123,22 @@ export function registerSearchTool(server: McpServer): void {
       );
 
       try {
-        // @ts-expect-error openai is a peer dependency
-        const { default: OpenAI } = await import("openai");
-        // @ts-expect-error @pinecone-database/pinecone is a peer dependency
-        const { Pinecone } = await import("@pinecone-database/pinecone");
-        const openai = new OpenAI();
-        const pinecone = new Pinecone();
-        const indexName = process.env.PINECONE_INDEX || "jigsaw";
-        const index = pinecone.index(indexName);
-
-        const embeddingResponse: any = await withRetry(() =>
-          openai.embeddings.create({
-            model: "text-embedding-3-small",
-            input: query,
+        const client = getApiClient();
+        const { data } = await withRetry(() =>
+          client.post<SearchResponse>("/api/search", {
+            query,
+            sourceId,
+            limit,
+            threshold,
           }),
         );
 
-        if (!embeddingResponse.data || embeddingResponse.data.length === 0) {
-          throw new Error(
-            "OpenAI returned no embeddings. Check OPENAI_API_KEY and input content.",
-          );
-        }
-
-        const queryVector = embeddingResponse.data[0].embedding;
-
-        const searchOptions: Record<string, unknown> = {
-          topK: limit || 5,
-          includeMetadata: true,
-        };
-        if (sourceId) {
-          searchOptions.filter = { sourceId };
-        }
-        if (threshold) {
-          searchOptions.minScore = threshold;
-        }
-
-        const results: any = await withRetry(() =>
-          index.query({
-            vector: queryVector,
-            ...searchOptions,
-          }),
-        );
-
-        const formatted = results.matches.map(
-          (match: any) => ({
-            id: match.id,
-            score: match.score,
-            content: (match.metadata?.content as string) || "",
-            metadata: {
-              sourceId: (match.metadata?.sourceId as string) || "",
-              url: (match.metadata?.url as string) || "",
-              title: (match.metadata?.title as string) || "",
-              chunkIndex: (match.metadata?.chunkIndex as number) || 0,
-              totalChunks: (match.metadata?.totalChunks as number) || 0,
-            },
-          }),
-        );
+        const formatted = data.results.map((match) => ({
+          id: match.id,
+          score: match.score,
+          content: match.content,
+          metadata: match.metadata,
+        }));
 
         logToolCall("search", { query }, startTime, formatted.length);
 

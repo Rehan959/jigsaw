@@ -1,17 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const mockValues = vi.fn();
-const mockReturning = vi.fn();
+const mockPost = vi.fn();
 
-vi.mock("@jigsaw/db", () => ({
-  db: {
-    insert: vi.fn(() => ({
-      values: mockValues.mockReturnValue({
-        returning: mockReturning,
-      }),
-    })),
-  },
-  sources: {},
+vi.mock("../../api-client.js", () => ({
+  getApiClient: () => ({
+    post: mockPost,
+  }),
 }));
 
 import { registerAddSourceTool } from "../add-source.js";
@@ -38,15 +32,17 @@ describe("add_source tool", () => {
   });
 
   it("creates a source on happy path", async () => {
-    const now = new Date("2025-01-15T10:00:00Z");
-    mockReturning.mockResolvedValue([
-      {
-        id: "src-new",
-        url: "https://example.com",
-        name: "My Example",
-        createdAt: now,
+    mockPost.mockResolvedValue({
+      data: {
+        source: {
+          id: "src-new",
+          url: "https://example.com",
+          name: "My Example",
+          createdAt: "2025-01-15T10:00:00.000Z",
+        },
       },
-    ]);
+      status: 201,
+    });
 
     const result = await handler({
       url: "https://example.com",
@@ -58,6 +54,10 @@ describe("add_source tool", () => {
     expect(parsed.status).toBe("success");
     expect(parsed.source.id).toBe("src-new");
     expect(parsed.source.name).toBe("My Example");
+    expect(mockPost).toHaveBeenCalledWith("/api/sources", {
+      url: "https://example.com",
+      name: "My Example",
+    });
   });
 
   it("rejects non-string URL via Zod validation", async () => {
@@ -82,23 +82,30 @@ describe("add_source tool", () => {
     expect(result.success).toBe(false);
   });
 
-  it("derives name from URL hostname when not provided", async () => {
-    const now = new Date("2025-01-15T10:00:00Z");
-    mockReturning.mockResolvedValue([
-      {
-        id: "src-2",
-        url: "https://www.example.com/page",
-        name: "example.com",
-        createdAt: now,
-      },
-    ]);
+  it("returns error on API failure", async () => {
+    const apiError = new Error("Invalid request") as any;
+    apiError.status = 400;
+    apiError.code = "VALIDATION_ERROR";
+    mockPost.mockRejectedValue(apiError);
 
-    await handler({ url: "https://www.example.com/page" });
+    const result = await handler({
+      url: "invalid-url",
+    });
 
-    expect(mockValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "example.com",
-      }),
-    );
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("API error (400)");
+  });
+
+  it("returns error on auth failure", async () => {
+    const apiError = new Error("Invalid or missing API key") as any;
+    apiError.status = 401;
+    mockPost.mockRejectedValue(apiError);
+
+    const result = await handler({
+      url: "https://example.com",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Authentication failed");
   });
 });

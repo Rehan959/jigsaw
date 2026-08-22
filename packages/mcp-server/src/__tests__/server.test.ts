@@ -1,32 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("@jigsaw/db", () => ({
-  db: {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        limit: vi.fn().mockResolvedValue([]),
-        innerJoin: vi.fn(() => {
-          const chainable: any = {};
-          chainable.where = vi.fn(() => chainable);
-          chainable.orderBy = vi.fn(() => chainable);
-          chainable.limit = vi.fn().mockResolvedValue([]);
-          return chainable;
-        }),
-      })),
-    })),
-  },
-  sources: {},
-  crawlJobs: {},
-}));
-
-vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(),
-  desc: vi.fn(),
-}));
-
-vi.mock("openai", () => ({ default: class {} }));
-vi.mock("@pinecone-database/pinecone", () => ({
-  Pinecone: class {},
+vi.mock("../../api-client.js", () => ({
+  getApiClient: () => ({
+    get: vi.fn(),
+    post: vi.fn(),
+  }),
 }));
 
 import { createJigsawServer } from "../server.js";

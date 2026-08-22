@@ -7,6 +7,9 @@ export type {
   ChunkMetadata,
   SearchResult,
   SearchQuery,
+  AuthUser,
+  AuthResponse,
+  ErrorResponse,
 } from "./types.js";
 
 export {
