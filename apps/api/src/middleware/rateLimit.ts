@@ -5,6 +5,7 @@ export const authRateLimit = rateLimit({
   max: process.env.NODE_ENV === "production" ? 10 : 100,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   message: {
     error: "Too many authentication attempts, please try again later",
     code: "RATE_LIMIT_EXCEEDED",
@@ -17,6 +18,7 @@ export const apiRateLimit = rateLimit({
   max: process.env.NODE_ENV === "production" ? 100 : 100,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     const userId = (req as any).user?.id;
     return userId || req.ip || "unknown";
@@ -31,6 +33,7 @@ export const mcpRateLimit = rateLimit({
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   message: {
     error: "Too many MCP requests, please try again later",
     code: "RATE_LIMIT_EXCEEDED",
