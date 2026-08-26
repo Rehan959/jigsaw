@@ -7,8 +7,12 @@ if (!connectionString) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
+const wantsSsl =
+  process.env.NODE_ENV === "production" ||
+  /sslmode=(require|verify-ca|verify-full)/.test(connectionString);
+
 const client = postgres(connectionString, {
-  ssl: process.env.NODE_ENV === "production" ? "require" : false,
+  ssl: wantsSsl ? "require" : false,
 });
 export const db = drizzle(client, { schema });
 

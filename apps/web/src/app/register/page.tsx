@@ -77,10 +77,10 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Min 8 characters"
+                placeholder="Min 12 chars, A-Z, a-z, 0-9, symbol"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                minLength={8}
+                minLength={12}
                 required
                 autoComplete="new-password"
               />
