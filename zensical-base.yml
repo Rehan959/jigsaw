@@ -1,0 +1,103 @@
+site_name: Jigsaw
+site_description: Jigsaw - Effortless Web Scraping for the Modern Web!
+use_directory_urls: false
+exclude_docs: 'README*.md
+
+  locales/
+
+  '
+extra_css:
+- stylesheets/extra.css
+extra_javascript:
+- assets/javascripts/language-links.js
+theme:
+  custom_dir: docs/overrides
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+  - navigation.path
+  - navigation.top
+  - navigation.footer
+  - navigation.indexes
+  - navigation.sections
+  - navigation.tracking
+  - navigation.instant
+  - navigation.instant.prefetch
+  - navigation.instant.progress
+  - search.share
+  - search.suggest
+  - search.highlight
+  - content.action.view
+  - content.code.copy
+markdown_extensions:
+  pymdownx:
+    caret: {}
+    mark: {}
+    tilde: {}
+    details: {}
+    superfences:
+      custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: pymdownx.superfences.fence_code_format
+    inlinehilite: {}
+    snippets:
+      base_path:
+      - includes
+      check_paths: true
+    emoji:
+      emoji_index: zensical.extensions.emoji.twemoji
+      emoji_generator: zensical.extensions.emoji.to_svg
+    highlight:
+      pygments_lang_class: true
+      anchor_linenums: true
+      line_spans: __span
+    tabbed:
+      alternate_style: true
+  admonition: {}
+  abbr: {}
+  attr_list: {}
+  tables: {}
+  codehilite:
+    css_class: highlight
+  toc:
+    permalink: true
+    toc_depth: 3
+plugins:
+  mkdocstrings:
+    custom_templates: docs/overrides/api
+    handlers:
+      python:
+        inventories:
+        - https://docs.python.org/3/objects.inv
+        paths:
+        - jigsaw
+        options:
+          docstring_style: sphinx
+          show_source: true
+          show_root_heading: true
+          show_if_no_docstring: true
+          inherited_members: true
+          members_order: source
+          separate_signature: true
+          unwrap_annotated: true
+          filters: public
+          merge_init_into_class: true
+          docstring_section_style: spacy
+          signature_crossrefs: true
+          show_symbol_type_heading: true
+          show_symbol_type_toc: true
+          show_inheritance_diagram: true
+          modernize_annotations: true
+          extensions:
+          - griffe_runtime_objects
+          - griffe_sphinx
+          - griffe_inherited_docstrings:
+              merge: true
+extra:
+  social:
+watch:
+- zensical-base.yml
+- docs/assets
+- docs/stylesheets
+- includes
